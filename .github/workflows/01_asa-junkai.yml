@@ -1,0 +1,24 @@
+name: 朝の巡回（庁議・委員会速報）
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 日本時間 毎朝7時
+  workflow_dispatch:
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests beautifulsoup4 anthropic
+      - run: python automation/monitor.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+      - name: 記録をコミット
+        run: |
+          git config user.name "giin-os-bot" && git config user.email "bot@local"
+          git add -A && git commit -m "morning watch $(date +%F)" || true
+          git push

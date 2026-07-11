@@ -1,0 +1,23 @@
+name: 財源ハンター（第3月曜・月次）
+on:
+  schedule:
+    - cron: "30 22 * * 0"   # 日本時間 月曜朝7時半に毎週起動→スクリプト側で第3月曜のみ実行
+  workflow_dispatch:
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install anthropic requests
+      - run: python automation/funding_hunter.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+      - run: |
+          git config user.name "giin-os-bot" && git config user.email "bot@local"
+          git add reports/ && git commit -m "funding report" || true
+          git push

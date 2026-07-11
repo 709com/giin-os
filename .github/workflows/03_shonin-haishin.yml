@@ -1,0 +1,15 @@
+name: 承認して配信（LINE一斉送信ボタン）
+on:
+  workflow_dispatch:   # このボタン ＝ 承認
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests anthropic
+      - run: python automation/broadcast.py
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          BANNER_URL: https://raw.githubusercontent.com/${{ github.repository }}/main/banner.jpg

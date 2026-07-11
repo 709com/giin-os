@@ -1,0 +1,27 @@
+name: LINE週刊コラム下書き（木曜朝）
+on:
+  schedule:
+    - cron: "0 22 * * 3"   # 日本時間 木曜朝7時
+  workflow_dispatch:
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install anthropic requests pillow
+      - name: 日本語フォント取得
+        run: |
+          curl -sL -o automation/NotoSansJP-Bold.otf "https://github.com/googlefonts/noto-cjk/raw/main/Sans/SubsetOTF/JP/NotoSansJP-Bold.otf"
+      - run: python automation/weekly_column.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+      - name: 下書きとバナーをコミット
+        run: |
+          git config user.name "giin-os-bot" && git config user.email "bot@local"
+          git add draft.txt banner.jpg && git commit -m "draft $(date +%F)" || true
+          git push
