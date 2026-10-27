@@ -1,7 +1,6 @@
 name: 朝の巡回（庁議・委員会速報）
 on:
   schedule:
-    - cron: "0 22 * * *"   # 日本時間 毎朝7時
   workflow_dispatch:
 jobs:
   watch:
