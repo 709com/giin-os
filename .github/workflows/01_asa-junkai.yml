@@ -1,6 +1,5 @@
 name: 朝の巡回（庁議・委員会速報）
 on:
-  schedule:
   workflow_dispatch:
 jobs:
   watch:
