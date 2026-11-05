@@ -1,0 +1,52 @@
+name: 文京区まとめ（X自動投稿・30分ごと）
+# 会派X @bunkyo_matome の巡回。設定シートの「試運転」がオンの間は候補を並べるだけで投稿しない。
+# 注意：schedule は main ブランチに入って初めて動く。試運転のままでも巡回自体は走る（投稿はしない）。
+on:
+  schedule:
+    - cron: "*/30 23,0-13 * * *"   # 日本時間 8:00〜22:30 の30分ごと（UTCで表記）
+    - cron: "10 14 * * *"          # 日本時間 23:10 その日のまとめ（型4）
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "patrol（通常の巡回）か digest（23時台のまとめだけ）"
+        default: "patrol"
+concurrency:
+  group: bunkyo-matome
+  cancel-in-progress: false
+jobs:
+  patrol:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests beautifulsoup4 lxml anthropic google-auth requests-oauthlib pynacl
+      - name: 実行モードを決める（23時台はまとめ）
+        id: mode
+        run: |
+          H=$(TZ=Asia/Tokyo date +%H)
+          M="${{ github.event.inputs.mode }}"
+          if [ -z "$M" ]; then if [ "$H" = "23" ]; then M=digest; else M=patrol; fi; fi
+          echo "mode=$M" >> "$GITHUB_OUTPUT"
+      - run: PYTHONPATH=automation python -m matome.patrol ${{ steps.mode.outputs.mode }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          GSHEETS_SA_JSON: ${{ secrets.GSHEETS_SA_JSON }}
+          X_CLIENT_ID: ${{ secrets.X_CLIENT_ID }}
+          X_CLIENT_SECRET: ${{ secrets.X_CLIENT_SECRET }}
+          X_REFRESH_TOKEN: ${{ secrets.X_REFRESH_TOKEN }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          GH_SECRETS_PAT: ${{ secrets.GH_SECRETS_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+      - name: 記録（state・速報版PDF・ローカル台帳）をコミット
+        run: |
+          git config user.name "giin-os-bot" && git config user.email "bot@local"
+          git add matome/ && git commit -m "matome patrol $(TZ=Asia/Tokyo date '+%F %H:%M')" || true
+          git pull --rebase origin ${{ github.ref_name }} || true
+          git push
