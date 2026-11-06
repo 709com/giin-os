@@ -75,6 +75,42 @@ GitHub Actions（30分ごと、8時〜22時台）
 Google Sheets API と Google Drive API を有効化 → スプレッドシート「文京区まとめ 投稿台帳」と、ドライブの保存先フォルダを、
 サービスアカウントのメールアドレスに「編集者」で共有。
 
+## 鍵の取り方（先生向けの手順。2026年11月6日追記）
+
+### A. Xの鍵（会派用 @bunkyo_matome）
+
+1. **開発者登録**：@bunkyo_matome でXにログインした状態で https://developer.x.com を開き、「Sign up for Free Account」→ 利用目的を英語で書いて登録（例：Posting Bunkyo City council schedules and city notices automatically）。
+2. **お金の設定**：https://console.x.com（開発者コンソール）→ Billing でクレジットを前払いで買う（従量制）。**自動チャージはオフ**、**利用上限は月30ドル**に設定。
+3. **アプリを作る**：コンソールの Projects & Apps → Create Project → App を作る。
+   「User authentication settings」を Set up：
+   - App permissions：**Read and write**
+   - Type of App：**Web App, Automated App or Bot**
+   - Callback URI：`http://127.0.0.1:8765/callback`、Website URL：`https://x.com/bunkyo_matome`
+4. **鍵を控える**（どちらか一方でよい。おすすめは「かんたん」）：
+   - **かんたん（OAuth 1.0a、期限切れなし）**：アプリの「Keys and tokens」で
+     `API Key` と `API Key Secret`（Consumer Keys）、`Access Token` と `Access Token Secret`（Authentication Tokens の欄。権限を Read and write にした**後に**「Regenerate」で作り直す）の4つ。
+     → GitHub Secrets に `X_API_KEY` `X_API_SECRET` `X_ACCESS_TOKEN` `X_ACCESS_SECRET` の名前で登録。
+   - **指示文どおり（OAuth 2.0）**：同じ画面の `Client ID` と `Client Secret` を控え、先生のPCで
+     `X_CLIENT_ID=… X_CLIENT_SECRET=… python automation/matome/x_authorize.py` を実行（ブラウザで許可を押すとリフレッシュトークンが表示される）。
+     → `X_CLIENT_ID` `X_CLIENT_SECRET` `X_REFRESH_TOKEN` を登録。さらに、トークンが使うたびに変わるのを自動で保存するため、
+     GitHub の Settings → Developer settings → Fine-grained tokens で「このリポジトリの Secrets: Read and write」だけ許可したトークンを作り `GH_SECRETS_PAT` として登録。
+5. **GitHub Secrets の登録場所**：https://github.com/709com/giin-os/settings/secrets/actions → New repository secret。名前は上のとおり大文字小文字まで同じにする。
+
+### B. 台帳（スプレッドシート）の鍵 `GSHEETS_SA_JSON`
+
+1. https://console.cloud.google.com でプロジェクトを1つ作る（名前は何でもよい）。
+2. 「APIとサービス」→「ライブラリ」で **Google Sheets API** と **Google Drive API** を有効にする。
+3. 「IAMと管理」→「サービスアカウント」→ 作成（名前例：giin-os-matome）→ 作成したアカウントの「キー」タブ → 鍵を追加 → JSON。ファイルが1つダウンロードされる。
+4. そのサービスアカウントのメールアドレス（…@….iam.gserviceaccount.com）に、スプレッドシート「文京区まとめ 投稿台帳」と、ドライブの保存先フォルダ「0_AI作業用／政活費_X発信」を**編集者**で共有。
+5. ダウンロードしたJSONファイルの中身を丸ごとコピーして、GitHub Secrets に `GSHEETS_SA_JSON` として登録（ファイルは登録後に削除候補フォルダへ）。
+6. 任意：保存先フォルダのURLの末尾のID を `GDRIVE_FOLDER_ID` として登録（月次の書き出し先）。
+
+### C. 鍵を入れたあとの確かめ方
+
+1. GitHub の Actions → 「文京区まとめ（X自動投稿・30分ごと）」→ Run workflow（試運転オンのまま）。
+2. 実行ログの先頭に「X鍵=oauth1a（または oauth2）台帳=スプレッドシート」と出れば鍵が効いている。候補シートに行が足されればOK。
+3. 本番にするときは、設定シートの「試運転」を「オフ」にする（先生のOK後）。
+
 ## 進め方の段階
 
 1. **試運転（今）**：`06_bunkyo-matome.yml` が main に入ると巡回が始まり、候補シートに並べる（投稿なし）。`GSHEETS_SA_JSON` が無い間は `matome/ledger_local.json` に書く
