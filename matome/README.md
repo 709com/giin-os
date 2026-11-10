@@ -1,0 +1,167 @@
+# 文京区まとめ（@bunkyo_matome）自動投稿のしくみ
+
+会派「ぶんきょう子育て.ネット」が運営する区政情報アカウント @bunkyo_matome に、
+議会の日程・資料の公開と、区のお知らせを自動で流す装置です。
+2026年10月30日〜11月5日のチャットで決めたことを、そのまま実装しています（決定事項は `仕様メモ` の項）。
+
+## 全体の流れ
+
+```
+GitHub Actions（30分ごと、8時〜22時台）
+  └ automation/matome/patrol.py
+      ├ 区の新着RSS ─────────────→ 型2【区のお知らせ】Claude（Sonnet）が本文から事実を抜き出し → すぐ投稿（1日3本まで）
+      │                               4本目からは 23時台の 型4【区のお知らせまとめ】へ
+      ├ 議会の日程一覧・日程ページ ──→ 型1【議会】前日の案内／定例会の全体日程／一般質問のスレッド
+      ├ 委員会ページ・通告・速報版 ──→ 型3【会議録・資料】公開のお知らせ（速報版PDFは matome/archive/ に保存）
+      │     （型1・型3は候補シートに並べて先生にLINE → 「確認」列に OK で次の巡回に投稿）
+      └ 台帳（Googleスプレッドシート「文京区まとめ 投稿台帳」）に 候補／投稿台帳／見張り を書く
+```
+
+- 投稿はすべて「親（リンクなし）＋返信（リンクあり）」のスレッド。親は0.015ドル、返信は0.2ドル（2026年11月5日に docs.x.com で再確認）。
+- 文面は型1・型3・型4が「決まった型」（出典ページの表や一覧から機械的に組み立て、Claudeは使わない）、型2だけ Claude。
+  どの型も投稿前に `compose.check_post()` が機械チェックします（親にリンクなし／「詳細は返信欄に」あり／ハッシュタグ1個／絵文字・感嘆符なし／出典にない数字なし など）。外れたら件名とリンクだけの安全な形に落とします。
+
+## ファイル
+
+| ファイル | 役割 |
+|---|---|
+| `automation/matome/patrol.py` | 巡回の本体（候補登録・承認の処理・投稿・見張り） |
+| `automation/matome/sources.py` | 区サイトの読み取り（RSS、議会の日程一覧、定例会の日程表、一般質問要旨、委員会ページ、速報版） |
+| `automation/matome/compose.py` | 文面の型と機械チェック、型2のClaudeプロンプト、料金 |
+| `automation/matome/ledger.py` | 台帳（スプレッドシート）の読み書き。鍵が無ければ `matome/ledger_local.json` に同じ形で書く |
+| `automation/matome/xapi.py` | X API（投稿、自分の投稿の読み取り、トークン更新） |
+| `automation/matome/monthly.py` | 毎月1日の処理（台帳の書き出し、月次照合、表示数、リンク切れ点検） |
+| `.github/workflows/06_bunkyo-matome.yml` | 30分ごとの巡回＋23時10分のまとめ |
+| `.github/workflows/07_matome-getsuji.yml` | 毎月1日 7時20分の月次処理 |
+| `matome/state.json` | 見たURL・候補の状態・日ごとの本数（Actionsが自動でコミット） |
+| `matome/archive/sokuho/` | 会議録速報版PDFの保存先（正式版が出ると区サイトから消えるため） |
+| `matome/reports/YYYY-MM/` | 月次の書き出し（CSV・表示数・使用量） |
+
+## 設定シート（スプレッドシートの「設定」）で動きを変える
+
+| 項目 | 値 | 意味 |
+|---|---|---|
+| 試運転 | オン／オフ | オンの間は候補を並べるだけで投稿しない（既定：オン） |
+| 停止スイッチ | オン／オフ | オンならすべて止める |
+| 1日の単独投稿の上限 | 3 | 4本目からは23時台のまとめ |
+| 先生の確認 | 議会のみ／すべて／なし | 「議会のみ」＝型1・型3は確認待ち、型2は即時。2027年1月に「なし」へ |
+| 投票日 | 2027-04-25 など | この日は0時〜24時投稿しない（「未定」なら無効） |
+| 会派の月の上限（ドル） | 30 | 投稿台帳の当月合計がこれに達したら投稿を止めて見張りに書く |
+| 最終巡回 | （自動） | 巡回が書き込む |
+
+## 先生の確認（型1・型3）のやり方
+
+1. 候補が出ると、LINEに文面案と「候補シート○行目」が届く（朝刊と同じLINE経路。別の手段にしたければ patrol.py の `line()` を差し替える）
+2. スプレッドシート「候補」の該当行の「確認」列に **OK** と書く（「見送り」なら投稿しない）
+3. 次の巡回（30分以内）で投稿。投稿後、「確認」列は「投稿済 日時 投稿ID」になる
+4. 文面を直したいときは「文面案」のセルを直してからOK（【親】【返信】の区切りはそのまま）
+5. 投稿予定日の前にOKしても、予定日（会議の前日）まで待って投稿する。会議当日を過ぎたら「期限切れ」になり投稿しない
+
+このスクリプトが登録した行だけを見ます。11月5日に手で入れた6行（「OK（先生が手動で投稿）」）は対象外です。
+
+## GitHub Secrets（鍵の置き場所。チャット・シート・コードには書かない）
+
+| 名前 | 中身 | 要・不要 |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | 既存。型2の文面づくり | 済 |
+| `LINE_CHANNEL_TOKEN` / `LINE_USER_ID` | 既存。先生への知らせ | 済 |
+| `GSHEETS_SA_JSON` | Googleサービスアカウントの鍵（JSON全文）。台帳の読み書き用 | **新規**。無い間はリポジトリ内の `matome/ledger_local.json` に書く |
+| `X_CLIENT_ID` / `X_CLIENT_SECRET` / `X_REFRESH_TOKEN` | X の OAuth 2.0（読み書き、offline.access）。会派用の開発者アカウント | **新規**。無い間は試運転 |
+| `GH_SECRETS_PAT` | リポジトリのSecretsを書ける細粒度PAT。OAuth 2.0のリフレッシュトークンは使うたびに新しくなるので、これで自動更新する | 推奨 |
+| `X_API_KEY` / `X_API_SECRET` / `X_ACCESS_TOKEN` / `X_ACCESS_SECRET` | 代わりに OAuth 1.0a を使う場合（期限切れが無く、PATも不要） | どちらか |
+| `GDRIVE_FOLDER_ID` | 月次の書き出し先（Googleドライブ「0_AI作業用／政活費_X発信」のフォルダID） | 任意 |
+
+サービスアカウントの作り方：Google Cloud でプロジェクト → 「サービスアカウント」を作成 → 鍵（JSON）を発行 →
+Google Sheets API と Google Drive API を有効化 → スプレッドシート「文京区まとめ 投稿台帳」と、ドライブの保存先フォルダを、
+サービスアカウントのメールアドレスに「編集者」で共有。
+
+## 鍵の取り方（先生向けの手順。2026年11月6日追記）
+
+### A. Xの鍵（会派用 @bunkyo_matome）
+
+1. **開発者登録**：@bunkyo_matome でXにログインした状態で https://developer.x.com を開き、「Sign up for Free Account」→ 利用目的を英語で書いて登録（例：Posting Bunkyo City council schedules and city notices automatically）。
+2. **お金の設定**：https://console.x.com（開発者コンソール）→ Billing でクレジットを前払いで買う（従量制）。**自動チャージはオフ**、**利用上限は月30ドル**に設定。
+3. **アプリを作る**：コンソールの Projects & Apps → Create Project → App を作る。
+   「User authentication settings」を Set up：
+   - App permissions：**Read and write**
+   - Type of App：**Web App, Automated App or Bot**
+   - Callback URI：`http://127.0.0.1:8765/callback`、Website URL：`https://x.com/bunkyo_matome`
+4. **鍵を控える**（どちらか一方でよい。おすすめは「かんたん」）：
+   - **かんたん（OAuth 1.0a、期限切れなし）**：アプリの「Keys and tokens」で
+     `API Key` と `API Key Secret`（Consumer Keys）、`Access Token` と `Access Token Secret`（Authentication Tokens の欄。権限を Read and write にした**後に**「Regenerate」で作り直す）の4つ。
+     → GitHub Secrets に `X_API_KEY` `X_API_SECRET` `X_ACCESS_TOKEN` `X_ACCESS_SECRET` の名前で登録。
+   - **指示文どおり（OAuth 2.0）**：同じ画面の `Client ID` と `Client Secret` を控え、先生のPCで
+     `X_CLIENT_ID=… X_CLIENT_SECRET=… python automation/matome/x_authorize.py` を実行（ブラウザで許可を押すとリフレッシュトークンが表示される）。
+     → `X_CLIENT_ID` `X_CLIENT_SECRET` `X_REFRESH_TOKEN` を登録。さらに、トークンが使うたびに変わるのを自動で保存するため、
+     GitHub の Settings → Developer settings → Fine-grained tokens で「このリポジトリの Secrets: Read and write」だけ許可したトークンを作り `GH_SECRETS_PAT` として登録。
+5. **GitHub Secrets の登録場所**：https://github.com/709com/giin-os/settings/secrets/actions → New repository secret。名前は上のとおり大文字小文字まで同じにする。
+
+### B. 台帳（スプレッドシート）の鍵 `GSHEETS_SA_JSON`
+
+1. https://console.cloud.google.com でプロジェクトを1つ作る（名前は何でもよい）。
+2. 「APIとサービス」→「ライブラリ」で **Google Sheets API** と **Google Drive API** を有効にする。
+3. 「IAMと管理」→「サービスアカウント」→ 作成（名前例：giin-os-matome）→ 作成したアカウントの「キー」タブ → 鍵を追加 → JSON。ファイルが1つダウンロードされる。
+4. そのサービスアカウントのメールアドレス（…@….iam.gserviceaccount.com）に、スプレッドシート「文京区まとめ 投稿台帳」と、ドライブの保存先フォルダ「0_AI作業用／政活費_X発信」を**編集者**で共有。
+5. ダウンロードしたJSONファイルの中身を丸ごとコピーして、GitHub Secrets に `GSHEETS_SA_JSON` として登録（ファイルは登録後に削除候補フォルダへ）。
+6. 任意：保存先フォルダのURLの末尾のID を `GDRIVE_FOLDER_ID` として登録（月次の書き出し先）。
+
+### C. 鍵を入れたあとの確かめ方
+
+1. GitHub の Actions → 「文京区まとめ（X自動投稿・30分ごと）」→ Run workflow（試運転オンのまま）。
+2. 実行ログの先頭に「X鍵=oauth1a（または oauth2）台帳=スプレッドシート」と出れば鍵が効いている。候補シートに行が足されればOK。
+3. 本番にするときは、設定シートの「試運転」を「オフ」にする（先生のOK後）。
+
+## 進め方の段階
+
+1. **試運転（今）**：`06_bunkyo-matome.yml` が main に入ると巡回が始まり、候補シートに並べる（投稿なし）。`GSHEETS_SA_JSON` が無い間は `matome/ledger_local.json` に書く
+2. 先生が開発者登録と鍵の登録を済ませたら、Actions の「Run workflow」で1回ずつ確かめる（試運転のままなら投稿されない）
+3. 先生の「OK」で設定シートの「試運転」をオフ → 本番
+
+## 月次（毎月1日 7時20分）
+
+- 前月の投稿台帳を `matome/reports/YYYY-MM/投稿台帳_YYYY-MM.csv` に書き出し（`GDRIVE_FOLDER_ID` があればドライブにも）
+- 「月次照合」に行を足す（請求額はログインが要るので、先生がコンソールから転記。LINEでお願いする）
+- 自分の投稿の読み取りで前月の表示数を集め、本数・投稿のなかった日・費用・表示数をLINEと「見張り」シートに書く
+  ※ 読み取りの単価は docs.x.com では 1件0.005ドル（指示文の0.001ドルより高い）。コードは0.005で計上
+- 投稿台帳の元資料URLのリンク切れを点検
+
+## 見張り（「見張り」シートに書き、LINEにも送る。朝刊に載せる想定）
+
+- 新着や議会の動きがあったのに24時間投稿がない／X APIのエラー、トークン更新の失敗／区のページの形が変わって読み取れない／月の上限到達
+- クレジット残高は API で取れないため、月次のお願い（コンソールの保存）で先生が確認する
+
+## 朝刊への追加（案。朝刊の定期タスクの指示文に足す文。先生のOK後に反映）
+
+```
+## 手順3.9：文京区まとめ（会派X）の状況
+スプレッドシート「文京区まとめ 投稿台帳」（ID: 1pJ8DPLDQURC9IzrwyPWmKYsV58tmx4TGJwUo_v34qBo）を読む。
+(a) 「候補」シートで「確認」列が「未」の行（議会の候補）を、件名・投稿予定日（備考）つきで最大5件。先生へ「候補シート○行目にOKと書くと投稿します」と添える。
+(b) 「投稿台帳」シートの昨日の行を、型・件名（本文の1行目）・投稿IDで一覧にする（最初の2週間は毎日。以後は本数だけ）。
+(c) 「見張り」シートで「対応」列が空の行を要点1行ずつ。
+出力の「3. 区の新着」の後ろに「3.5 文京区まとめ」として載せる。取得できなければ取得状況に「文京区まとめ×」。
+```
+
+## 仕様メモ（決めたこと。変えるときは先生に確認）
+
+- リンクの置き方は「親はリンクなし、詳しく知りたい方向けに返信（次の投稿）の末尾にリンク」で確定（2026-11-07 先生決定）。理由：本文にリンクがあるとそのまま離脱されるリスクがある。返信を開く操作（続きを見る・次のコメントのクリック）が反応として数えられ、表示数の面でも有利と判断。親だけ見て離れる人にも中身が伝わるよう、親に「誰が・何を・いつまで」を書く原則は続ける。2通りの比較（A/Bテスト）は行わない。
+
+- 投稿の型・文面の約束ごと・優先順位・1日3本・23時台のまとめ・確認の運用は、2026年11月5日時点の引き継ぎ指示のとおり
+- 件名に「障害」「メンテナンス」「復旧」が入るものは流さない。件名からその表記が消えたら候補に戻る
+- 同じURLが更新で再び載ったら、2回目以降は単独にせず型4へ
+- 一般質問の日は、親→出典リンクの返信→議員ごとに1本ずつ返信（登壇順、通告の項目をそのまま番号付き）
+- 傍聴の案内：本会議63人・委員会15人、当日8時30分からシビックセンター23階の区議会事務局で受付、超えたら抽選。委員会室は令和10年4月まで26階スカイホール（`compose.py` の定数。変わったらそこを直す）
+- 令和9年になったら日程一覧の r09 を自動で見る（12月からは翌年分も見る）
+- 会議録検索システムは取りに行かない
+
+## ナレッジ
+
+他自治体の調査メモは `matome/knowledge/` に日付つきで置く（索引は同フォルダの README.md）。
+
+## 確かめ方（自分のPCで）
+
+```bash
+pip install requests beautifulsoup4 lxml anthropic
+PYTHONPATH=automation python -m matome.patrol                      # 試運転・ローカル台帳で巡回
+MATOME_FAKE_NOW="2026-11-16 09:00" PYTHONPATH=automation python -m matome.patrol   # 11月16日のつもりで動かす
+```
+結果は `matome/ledger_local.json`（候補・見張り）と `matome/state.json` に出ます。
