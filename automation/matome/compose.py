@@ -256,8 +256,8 @@ def check_post(parent, replies, source_text=None, hashtag=None, banned=BANNED_PH
     p = []
     if URL_RE.search(parent):
         p.append("親にリンクがある")
-    if "詳細は返信欄に" not in parent and "返信欄に" not in parent:
-        p.append("親に「詳細は返信欄に」が無い")
+    if "返信欄に" not in parent and "続きはコメントに" not in parent:
+        p.append("親に「続きはコメントに」（または「詳細は返信欄に」）が無い")
     tags = re.findall(r"#\S+", parent)
     if len(tags) != 1 or tags[0] not in (HASHTAG_GIKAI, HASHTAG_KU):
         p.append(f"ハッシュタグが1個でない: {tags}")
