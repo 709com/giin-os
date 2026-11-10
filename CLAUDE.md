@@ -18,3 +18,10 @@
 
 `ANTHROPIC_API_KEY`, `LINE_CHANNEL_TOKEN`, `LINE_USER_ID`（既存）。文京区まとめ用に `GSHEETS_SA_JSON`, `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_REFRESH_TOKEN`, `GH_SECRETS_PAT`（任意で `GDRIVE_FOLDER_ID`、OAuth 1.0a を使うなら `X_API_KEY` ほか）。
 鍵はチャット・スプレッドシート・コード・コミットに書かない。
+
+## 作業を終えるたびの現状報告（2026年11月10日 先生の指示）
+
+作業を1つ終えるたびに、次の5項目で短く日本語の現状報告を出す。
+案件名／状態（進行中・判断待ち・保留・完了のどれか）／ここまでにできたこと（3行以内）／次の一手（先生がやること・Claudeがやることを分ける）／先生の返事を待っている質問。
+
+同じ内容を、Googleスプレッドシート「判断待ち台帳」（ID: 1yCHauTuWMPNjUCvjiey5w_ZKXsOn86M6KQ3yMvskVkk）の「案件一覧」タブの該当行の「状態」「次の一手」「最終更新」「メモ」に書く（このリポジトリの「文京区まとめ」は「文京区まとめ自動投稿（会派X @bunkyo_matome）」の行）。行がなければ最終行の下に足す。書き込めない場合はリポジトリ直下の STATUS.md に書く。行の削除や並べ替えはしない。
