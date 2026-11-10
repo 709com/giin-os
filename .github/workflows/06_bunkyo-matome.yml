@@ -8,8 +8,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "patrol（通常の巡回）／digest（23時台のまとめだけ）／check（鍵の確認だけ。投稿しない）"
+        description: "patrol（通常の巡回）／digest（23時台のまとめだけ）／check（鍵の確認だけ。投稿しない）／post（row の1本だけ投稿）"
         default: "patrol"
+      row:
+        description: "mode が post のときだけ：投稿する候補シートの行番号（試運転でもその1本だけ投稿する）"
+        default: ""
 concurrency:
   group: bunkyo-matome
   cancel-in-progress: false
@@ -29,7 +32,7 @@ jobs:
           M="${{ github.event.inputs.mode }}"
           if [ -z "$M" ]; then if [ "$H" = "23" ]; then M=digest; else M=patrol; fi; fi
           echo "mode=$M" >> "$GITHUB_OUTPUT"
-      - run: PYTHONPATH=automation python -m matome.patrol ${{ steps.mode.outputs.mode }}
+      - run: PYTHONPATH=automation python -m matome.patrol ${{ steps.mode.outputs.mode }} ${{ github.event.inputs.row }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}

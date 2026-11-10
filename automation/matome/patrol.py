@@ -555,8 +555,54 @@ def check_keys():
         print("結果: Xへの接続でエラー:", e); return 1
 
 
+def weighted_len(text):
+    """Xの数え方での長さ（全角は2、URLは23）。280を超えると長文投稿（プレミアム等）が必要"""
+    t = C.URL_RE.sub("", text)
+    n = sum(1 if ord(ch) < 0x1100 else 2 for ch in t)
+    return n + 23 * len(C.URL_RE.findall(text))
+
+
+def post_row(row):
+    """候補シートの1行を、先生の指示でその場で投稿する（試運転がオンでも投稿する。停止スイッチと投票日は守る）"""
+    p = Patrol("post")
+    if p.settings.get("停止スイッチ", "オフ") == "オン":
+        print("結果: 停止スイッチがオンのため投稿しません"); return 1
+    if not p.ledger.remote:
+        print("結果: 台帳の鍵が無いので候補シートを読めません"); return 1
+    r = next((x for x in p.ledger.rows("候補") if x["_row"] == row), None)
+    if not r or not r.get("文面案"):
+        print(f"結果: 候補シート{row}行目に文面がありません"); return 1
+    parent, replies = C.from_cell(r["文面案"])
+    problems = C.check_post(parent, replies)
+    if problems:
+        print("結果: 機械チェックで止めました:", "、".join(problems)); return 1
+    x = XClient(dry_run=False)
+    if not x.can_post:
+        print("結果: Xの鍵がありません"); return 1
+    longest = max(weighted_len(t) for t in [parent] + replies)
+    if longest > 280:
+        me = x._request("GET", "/users/me", params={"user.fields": "subscription_type,verified_type"})
+        sub = (me.json().get("data", {}) if me.status_code == 200 else {})
+        print("アカウントの種別:", sub.get("subscription_type"), sub.get("verified_type"))
+        if str(sub.get("subscription_type", "None")) in ("None", "") and str(sub.get("verified_type", "none")) in ("none", "None", ""):
+            print(f"結果: 文面が長く（最長{longest}、上限280）、長文投稿できるプラン（Xプレミアム）が確認できないため、投稿を止めました"); return 1
+    p.dry, p.x = False, x
+    pid = p.post_thread(parent, replies, {"型": r.get("型", ""), "url": r.get("URL", ""), "確認": "先生の指示で手動実行"})
+    if pid.startswith("未投稿"):
+        print("結果:", pid); return 1
+    pending = bool(p.state["pending_replies"])
+    p.ledger.update_cell("候補", row, "確認", f"投稿済 {fmt_dt(p.now)} {pid}" + ("（返信は未完了）" if pending else ""))
+    save_state(p.state)
+    print(f"結果: 投稿しました https://x.com/bunkyo_matome/status/{pid}" + ("　※返信の投稿に失敗。次の巡回でやり直します" if pending else "（返信も投稿済み）"))
+    for a in p.alerts:
+        print("注意:", a)
+    return 0
+
+
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "patrol"
     if mode == "check":
         sys.exit(check_keys())
+    if mode == "post":
+        sys.exit(post_row(int(sys.argv[2])))
     Patrol(mode).run()
