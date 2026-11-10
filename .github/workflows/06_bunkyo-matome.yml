@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "patrol（通常の巡回）か digest（23時台のまとめだけ）"
+        description: "patrol（通常の巡回）／digest（23時台のまとめだけ）／check（鍵の確認だけ。投稿しない）"
         default: "patrol"
 concurrency:
   group: bunkyo-matome

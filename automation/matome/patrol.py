@@ -537,5 +537,26 @@ class Patrol:
         self.say("巡回終了")
 
 
+def check_keys():
+    """鍵の確認だけをする（投稿しない）。Xに「このアカウントは誰か」を1回だけ尋ねる"""
+    import os
+    x = XClient(dry_run=False)
+    print("X鍵の方式:", x.mode or "未登録")
+    print("台帳の鍵（GSHEETS_SA_JSON）:", "あり" if os.environ.get("GSHEETS_SA_JSON") else "なし（リポジトリ内のファイルに書きます）")
+    print("Claudeの鍵（ANTHROPIC_API_KEY）:", "あり" if os.environ.get("ANTHROPIC_API_KEY") else "なし")
+    if not x.can_post:
+        print("結果: Xの鍵が見つかりません。Secretsの名前を確かめてください"); return 1
+    try:
+        r = x._request("GET", "/users/me")
+        if r.status_code == 200:
+            print("結果: Xにつながりました。アカウントは @" + r.json()["data"]["username"]); return 0
+        print(f"結果: Xが鍵を受け付けません（{r.status_code}）: {r.text[:300]}"); return 1
+    except Exception as e:
+        print("結果: Xへの接続でエラー:", e); return 1
+
+
 if __name__ == "__main__":
-    Patrol(sys.argv[1] if len(sys.argv) > 1 else "patrol").run()
+    mode = sys.argv[1] if len(sys.argv) > 1 else "patrol"
+    if mode == "check":
+        sys.exit(check_keys())
+    Patrol(mode).run()
