@@ -401,6 +401,10 @@
   "https://www.city.bunkyo.lg.jp/kugikai/bouchou/p000007.html": {
    "published": false,
    "sig": "f11c6c1a22d1c81633260a6fa8af1745"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/p007419/p000007.html": {
+   "published": false,
+   "sig": "3c1fc2c36725a2571b2e0314f6b56e29"
   }
  },
  "questions_pages": {
@@ -429,9 +433,30 @@
   "https://www.city.bunkyo.lg.jp/documents/6807/1007giun.pdf",
   "https://www.city.bunkyo.lg.jp/documents/6807/1007kousei.pdf",
   "https://www.city.bunkyo.lg.jp/documents/6807/1007soumukumin.pdf",
-  "https://www.city.bunkyo.lg.jp/documents/6807/1007zenkyo.pdf"
+  "https://www.city.bunkyo.lg.jp/documents/6807/1007zenkyo.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1008kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1009kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1014kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1015kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1016kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1019kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1020kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1022giun.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1022kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1022zenkyo.pdf"
  ],
- "candidates": {},
+ "candidates": {
+  "型3|sokuho|2026-11-12|21": {
+   "型": "型3",
+   "title": "委員会会議録（速報版）の公開 予算審査特別委員会、全員協議会、議会運営委員会",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/p007084.html",
+   "row": 60,
+   "status": "未",
+   "post_on": "2026-11-12",
+   "expires": "2026-11-19",
+   "created": "2026-11-12 00:19"
+  }
+ },
  "posted": {
   "2026-11-11": {
    "singles": 0,
@@ -445,13 +470,17 @@
     "creator": "福祉部高齢福祉課",
     "url": "https://www.city.bunkyo.lg.jp/b017/p007613.html"
    }
-  ]
+  ],
+  "2026-11-12": []
  },
  "pending_replies": [],
  "alerts": {
   "crash:2026-11-11": "2026-11-11 18:46"
  },
  "last_post_at": "2026-11-11 23:52",
- "last_run": "2026-11-11 18:46",
- "last_new_item_at": "2026-11-11 18:46"
+ "last_run": "2026-11-12 00:19",
+ "last_new_item_at": "2026-11-11 18:46",
+ "slots_done": {
+  "2026-11-12": []
+ }
 }
