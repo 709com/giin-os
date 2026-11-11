@@ -2,6 +2,7 @@
 
 文京区議会議員・たかはまなおき（「先生」）の事務作業を自動化するリポジトリ。全体像と使い方は `README.md`。
 返事・報告は日本語。先生はコードをほとんど読めないので、専門用語は噛み砕いて書く。
+先生の端末は **Windows PC と iPhone**（Macではない）。説明では「PC」と呼ぶ。
 設定の変更・ワークフローの有効化・対外投稿は、内容とリスクを示して先生の「OK」を得てから。ファイルは削除しない（移動のみ）。
 
 ## 装置の一覧
@@ -13,6 +14,7 @@
 | 選挙アナリスト・財源ハンター | `04_*.yml` / `05_*.yml` | 月次レポート |
 | 質問パイプライン | `.claude/agents/` | 資料分析→他自治体調査→質問案→広報 |
 | **文京区まとめ（会派X @bunkyo_matome）** | `06_bunkyo-matome.yml` / `07_matome-getsuji.yml` → `automation/matome/` | 区の新着と議会の日程・資料をXに自動投稿。台帳はスプレッドシート「文京区まとめ 投稿台帳」。設定シートの「試運転」がオンの間は投稿しない。詳細は `matome/README.md` |
+| SideBooks新着チェック（議会の資料棚） | `sidebooks-check/check.js`（**先生のPCで実行**。GitHub Actionsでは動かさない） | 議会資料棚 SideBooks Cloud を1日1回たどり、新着をLINEで知らせてGoogleドライブに保存。使用基準 第4条3の使用届を出した先生のPCでのみ使う。資料名の一覧（snapshot.json）はGitHubに上げない（リポジトリが公開のため）。詳細は `sidebooks-check/README.md` |
 
 ## 鍵（GitHub Secrets）
 

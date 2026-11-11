@@ -1,0 +1,7 @@
+# 資料名の一覧・ダウンロード・記録はPCの中だけに置く（GitHubに上げない）
+snapshot.json
+downloads/
+debug/
+log.txt
+node_modules/
+package-lock.json

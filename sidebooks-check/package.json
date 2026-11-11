@@ -1,0 +1,14 @@
+{
+  "name": "sidebooks-check",
+  "version": "1.0.0",
+  "private": true,
+  "description": "文京区議会 SideBooks Cloud の新着ファイル監視（閲覧のみ）",
+  "main": "check.js",
+  "scripts": {
+    "check": "node check.js",
+    "test": "node check.js --test"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}
