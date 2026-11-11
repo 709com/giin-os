@@ -507,7 +507,7 @@ class Patrol:
                 continue
             m = re.search(r"投稿予定日 (\d{4}-\d\d-\d\d)／期限 (\d{4}-\d\d-\d\d)", r.get("備考", ""))
             post_on, expires = (m.group(1), m.group(2)) if m else ("", "9999-12-31")
-            if how == "自動":   # 自動の枠は拾ってから7日以内のものだけ
+            if how == "自動" and not m:   # 自動の枠は、日付の指定がなければ拾ってから7日以内のものだけ
                 expires = min(expires, (datetime.date.fromisoformat(r.get("拾った日時", today)[:10]) + datetime.timedelta(days=7)).isoformat())
             if today > expires:
                 self.ledger.update_cell("候補", r["_row"], "確認", "期限切れ（未投稿）"); continue
