@@ -259,8 +259,8 @@ def check_post(parent, replies, source_text=None, hashtag=None, banned=BANNED_PH
     # 見出しは先頭の【】1つだけ（本文中の件名に【】が入るのはかまわない）
     if not re.match(r"\s*【[^】]+】", parent) or re.match(r"\s*【[^】]*】\s*【", parent):
         p.append("見出し【】が1つだけになっていない")
-    if "返信欄に" not in parent and "続きはコメントに" not in parent:
-        p.append("親に「続きはコメントに」（または「詳細は返信欄に」）が無い")
+    if not any(w in parent for w in ("次のポスト", "返信欄に", "続きはコメントに")):
+        p.append("親に「リンクは次のポストに」（または「詳細は返信欄に」）が無い")
     tags = re.findall(r"#\S+", parent)
     if not 1 <= len(tags) <= 3:
         p.append(f"ハッシュタグが1〜3個でない: {tags}")
