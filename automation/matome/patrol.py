@@ -55,6 +55,11 @@ class Patrol:
         self.settings = self.ledger.settings()
         self.log, self.alerts, self.notices = [], [], []
         self.dry = self.settings.get("試運転", "オン") == "オン"
+        m = re.search(r"(\d{4})\D+(\d{1,2})\D+(\d{1,2})", self.settings.get("本番開始日", ""))
+        if m and self.today < datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3))):
+            self.dry = True   # 本番開始日より前は試運転と同じ（投稿しない）
+        self.slots = self.settings.get("運用", "") == "3枠"   # 1日3枠（7時 自動／12時 区の施策 OK後／20時 議会 OK後）
+        self.state.setdefault("slots_done", {})
         self.x = XClient(dry_run=self.dry)
         if not self.dry and not self.x.can_post:
             self.dry = True
@@ -181,7 +186,8 @@ class Patrol:
                                          "post_on": post_on, "expires": expires, "created": fmt_dt(self.now)}
         self.say(f"候補を追加（{typ}）: {title}")
         if needs_ok:
-            self.notices.append(f"■{typ}（投稿予定 {post_on}）{title}\n{C.to_cell(parent, replies)}\n→ 台帳の候補シート{row}行目の「確認」に OK と書くと次の巡回で投稿します")
+            how = "20時の枠で投稿します" if self.slots else "次の巡回で投稿します"
+            self.notices.append(f"■{typ}（投稿予定 {post_on}）{title}\n{C.to_cell(parent, replies)}\n→ 台帳の候補シート{row}行目の「確認」に OK と書くと{how}")
         return key
 
     def needs_confirm(self, typ):
@@ -427,6 +433,8 @@ class Patrol:
                                  "文面案": "", "単独/まとめ": "まとめ", "確認": "—", "備考": why})
 
     def handle_new_item(self, it, pool):
+        if self.slots:
+            return self.slot_candidate(it)
         rec = self.today_rec()
         free = self.cap - rec["singles"] - self.reserved_slots()
         if free <= 0:
@@ -456,6 +464,88 @@ class Patrol:
             self.ledger.update_cell("候補", row, "確認", f"投稿済 {fmt_dt(self.now)} {pid}")
         else:
             rec["singles"] += 1 if self.dry else 0  # 試運転でも「枠」は数えて本番と同じ動きにする
+
+    # ---------- 1日3枠（2026-11-12 先生決定、11-14 から） ----------
+    SLOTS = ((7, 12, "自動", "区"), (12, 20, "OK", "区"), (20, 24, "OK", "議会"))   # (始まり, 終わり, 出し方, 分野)
+
+    def slot_candidate(self, it):
+        """区のお知らせ1件を文面にして候補シートへ。無難なものは「自動待ち」（7時の枠）、それ以外は先生のOK待ち（12時の枠）"""
+        try:
+            text = page_text(fetch(it["url"]))
+        except Exception as e:
+            self.say(f"ページ取得失敗 {it['url']}: {e}"); text = ""
+        parent, replies, problems = C.compose_type2(it, text)
+        safe = C.is_safe_item(it["title"], it.get("subject", "")) and not problems
+        note = ("Claude文面が約束に外れたため件名とリンクだけに: " + "、".join(problems)) if problems else "Claude（Sonnet）が本文から抜き出し"
+        note += "／7時の枠（自動）" if safe else "／12時の枠（先生のOK後）"
+        status = "自動待ち" if safe else "未"   # 本番開始日より前に拾ったものも、開始後の枠で出せるように並べておく
+        row = self.ledger.append("候補", {"拾った日時": fmt_dt(self.now), "掲載日": it["date"], "情報源": "区の新着", "型": "型2",
+                                       "件名": it["title"], "分野": it["subject"], "担当課": it["creator"], "URL": it["url"],
+                                       "文面案": C.to_cell(parent, replies), "単独/まとめ": "単独", "確認": status, "備考": note})
+        self.state["candidates"][f"型2|{it['url']}|{it['date']}"] = {
+            "型": "型2", "title": it["title"], "url": it["url"], "row": row, "status": status,
+            "post_on": self.today.isoformat(), "expires": (self.today + datetime.timedelta(days=7)).isoformat(),
+            "created": fmt_dt(self.now)}
+        if status == "未":
+            self.notices.append(f"■区の施策（12時の枠）{it['title']}\n{C.to_cell(parent, replies)}\n→ 候補シート{row}行目の「確認」に OK と書くと12時の枠で投稿します")
+
+    def pick_slot(self, how, area):
+        """候補シートから、この枠で出す1行を選ぶ（なければ None）"""
+        today = self.today.isoformat()
+        picks = []
+        for r in self.ledger.rows("候補"):
+            v = norm(r.get("確認", ""))
+            typ = r.get("型", "")
+            if area == "区" and typ != "型2":
+                continue
+            if area == "議会" and typ not in ("型1", "型3"):
+                continue
+            if how == "自動":
+                if v != "自動待ち":
+                    continue
+            elif not (v.lower() in OK_WORDS or v.upper() == "OK" or re.match(r"^OK（.*のため待機）$", v)):
+                continue
+            m = re.search(r"投稿予定日 (\d{4}-\d\d-\d\d)／期限 (\d{4}-\d\d-\d\d)", r.get("備考", ""))
+            post_on, expires = (m.group(1), m.group(2)) if m else ("", "9999-12-31")
+            if how == "自動":   # 自動の枠は拾ってから7日以内のものだけ
+                expires = min(expires, (datetime.date.fromisoformat(r.get("拾った日時", today)[:10]) + datetime.timedelta(days=7)).isoformat())
+            if today > expires:
+                self.ledger.update_cell("候補", r["_row"], "確認", "期限切れ（未投稿）"); continue
+            if post_on and today < post_on:
+                continue
+            picks.append((expires, -r["_row"] if how == "自動" else r["_row"], r))
+        picks.sort(key=lambda x: (x[0], x[1]))
+        for _, _, r in picks:
+            parent, replies = C.from_cell(r.get("文面案", ""))
+            problems = C.check_post(parent, replies)
+            if problems:
+                self.ledger.update_cell("候補", r["_row"], "確認", "要修正")
+                self.alert(f"slot_check_{r['_row']}", f"候補シート{r['_row']}行目は機械チェックで止めました（{'、'.join(problems)}）。直して再度「OK」にしてください")
+                continue
+            return r, parent, replies
+        return None
+
+    def slot_run(self):
+        """今の時刻の枠で、まだ出していなければ1本だけ出す（GitHubの遅れに備えて、次の枠の時刻までは待つ）"""
+        done = self.state["slots_done"].setdefault(self.today.isoformat(), [])
+        for start, end, how, area in self.SLOTS:
+            if not (start <= self.now.hour < end) or start in done:
+                continue
+            ok, why = self.may_post_now()
+            if not ok:
+                self.say(f"{start}時の枠：投稿しない（{why}）"); return
+            got = self.pick_slot(how, area)
+            if not got:
+                self.say(f"{start}時の枠：出せる候補なし（{'自動待ち' if how == '自動' else '先生のOK'}の候補がありません）"); return
+            r, parent, replies = got
+            pid = self.post_thread(parent, replies, {"型": r.get("型", ""), "url": r.get("URL", ""),
+                                                      "確認": "自動" if how == "自動" else "先生OK"})
+            if pid.startswith("未投稿"):
+                self.say(f"{start}時の枠：{pid}"); return
+            done.append(start)
+            self.ledger.update_cell("候補", r["_row"], "確認", f"投稿済 {fmt_dt(self.now)} {pid}")
+            self.say(f"{start}時の枠で投稿: 候補シート{r['_row']}行目 {r.get('件名', '')}")
+            return
 
     def post_digest(self):
         rec = self.today_rec()
@@ -491,7 +581,7 @@ class Patrol:
     def prune(self):
         """古い記録を整理（state.json を太らせない）"""
         old = (self.today - datetime.timedelta(days=60)).isoformat()
-        for k in ("posted", "digest_pool"):
+        for k in ("posted", "digest_pool", "slots_done"):
             self.state[k] = {d: v for d, v in self.state[k].items() if d >= old}
         self.state["alerts"] = {k: v for k, v in self.state["alerts"].items() if k.rsplit(":", 1)[-1] >= old}
         self.state["candidates"] = {k: v for k, v in self.state["candidates"].items() if v.get("expires", "9999") >= old}
@@ -505,7 +595,15 @@ class Patrol:
         self.say(f"巡回開始 {fmt_dt(self.now)} 試運転={'オン' if self.dry else 'オフ'} 投票日={'はい' if self.no_post_today else 'いいえ'} "
                  f"X鍵={self.x.mode or 'なし'} 台帳={'スプレッドシート' if self.ledger.remote else 'ローカル'}")
         try:
-            if self.mode == "digest":
+            if self.slots:   # 1日3枠の運用：区の新着と議会を候補にし、枠の時刻に1本ずつ出す（まとめ＝型4は出さない）
+                self.retry_replies()
+                if self.mode != "digest":
+                    self.check_council()
+                    self.check_sokuho()
+                    self.check_rss()
+                self.slot_run()
+                self.watch()
+            elif self.mode == "digest":
                 self.retry_replies(); self.post_digest()
             else:
                 self.retry_replies()
