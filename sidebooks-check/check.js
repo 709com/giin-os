@@ -7,6 +7,7 @@
 //   node check.js --debug    --test と一緒に使うと、画面の作りを debug/ に保存（微調整用）
 //   node check.js --no-download   ダウンロードしない
 //   node check.js --no-line       LINEに送らない
+//   node check.js --full          曜日にかかわらず棚全体を見る（ふだんは毎朝・日曜・第1日曜で見る範囲を変える）
 
 const fs = require('fs');
 const path = require('path');
@@ -26,6 +27,57 @@ const TEST = args.has('--test');
 const DEBUG = args.has('--debug');
 const NO_DOWNLOAD = args.has('--no-download') || TEST;
 const NO_LINE = args.has('--no-line') || TEST;
+const FULL_ARG = args.has('--full');
+
+// ---------- 見る範囲（先生の指定 2026-11-11。先方の負担を減らすため） ----------
+//   毎朝  ：「令和○年○月定例議会」（最重要）、「03 その他会議」（※開催終了分・old・議員研修会・議連名簿を除く）、「04 幹事長会 / 今年度」
+//   日曜  ：上に加えて「09 … / 調査結果 / 今年(R○)」「09 … / 各種計画等」
+//   第1日曜：棚全体（--full でいつでも棚全体）
+const jstNow = () => new Date(Date.now() + 9 * 3600 * 1000);
+function currentReiwaFY() {
+  const d = jstNow();
+  const y = d.getUTCMonth() + 1 >= 4 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
+  return y - 2018; // 2026年度 = 令和8年度
+}
+// 年度の変わり目（4・5月）は、前年度のフォルダにも資料が入るので前年度も見る
+function activeReiwaYears() {
+  const fy = currentReiwaFY();
+  const d = jstNow();
+  const ys = new Set([fy, d.getUTCFullYear() - 2018]);
+  if (d.getUTCMonth() + 1 <= 5) ys.add(fy - 1);
+  return ys;
+}
+const reiwaNum = (name) => { const m = name.trim().match(/^(?:令和\s*|R\s*)(\d+)/i); return m ? Number(m[1]) : null; };
+
+function todaysLevel() {
+  if (FULL_ARG) return 'full';
+  const d = jstNow();
+  if (d.getUTCDay() !== 0) return 'daily';
+  return d.getUTCDate() <= 7 ? 'full' : 'weekly';
+}
+
+// segs：ホームからのフォルダ名の並び。そのフォルダ（またはその下）を今日見るかどうか
+function inScope(segs, level) {
+  if (level === 'full' || segs.length === 0) return true;
+  const [a, b, c] = segs.map((s) => s.trim());
+  const yrs = activeReiwaYears();
+  if (/定例議会|臨時会/.test(a) && /^令和/.test(a)) return true;
+  // 「03 その他会議」の中の「※開催終了分」「old」「議員研修会」「議連名簿」は毎朝見ない（第1日曜の棚全体だけ）
+  // 「今後の議会運営に係る懇談会」は今年度だけ毎朝見る（過去の年度は第1日曜だけ）
+  if (/^03\s*その他会議/.test(a)) {
+    if (segs.length === 1) return true;
+    if (/開催終了分/.test(b) || /^old$/i.test(b) || /^議員研修会$|^議連名簿$/.test(b)) return false;
+    if (/懇談会/.test(b) && segs.length >= 3 && /年度/.test(c) && !yrs.has(reiwaNum(c))) return false;
+    return true;
+  }
+  if (/^04\s*幹事長会/.test(a)) return segs.length === 1 || (/年度/.test(b) && yrs.has(reiwaNum(b)));
+  if (level === 'weekly' && /^09\s*各種様式/.test(a)) {
+    if (segs.length === 1) return true;
+    if (b === '各種計画等') return true;
+    if (b === '調査結果') return segs.length === 2 || yrs.has(reiwaNum(c));
+  }
+  return false;
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (...a) => console.error(...a); // 進み具合は標準エラーへ（結果と混ぜない）
@@ -87,7 +139,7 @@ async function login(page, { user, pass }) {
 
 // ---------- 1フォルダを開いて中身を読む ----------
 async function openFolder(page, folseq) {
-  const url = folseq == null ? BASE : `${BASE}?folseq=${folseq}`;
+  const url = folseq == null ? BASE : folseq === 'new' ? `${BASE}?new` : `${BASE}?folseq=${folseq}`;
   await page.goto(url, { waitUntil: 'networkidle' });
   // 一覧が並び終わるのを待つ（「フォルダ:N件 ファイル:M件」の表示を目印にする）
   await page.waitForSelector('.bottomInfo', { timeout: 20000 }).catch(() => {});
@@ -155,11 +207,51 @@ async function resolveFolderSeqByClick(page, parentSeq, folder) {
   return '';
 }
 
+// ---------- 「新着ファイル」画面（?new） ----------
+// SideBooks の新着画面には、先生が見られる資料のうち直近10日分が並ぶ（2026-11-11 確認）。
+// 置き場所は一覧に出ないので、詳細（ⓘ）を開いて「場所」の欄を読む（画面の表示だけで、通信は増えない）。
+// 詳細を開くと一覧が詳細画面に切り替わるので、場所を調べるのは記録にない資料だけ・1件ごとに新着画面を開き直す。
+async function readNewPage(page, knownSeqs) {
+  const r = await openFolder(page, 'new');
+  const out = [];
+  let first = true;
+  for (const f of r.files) {
+    let where = '';
+    if (f.seq && !knownSeqs.has(f.seq)) {
+      try {
+        if (!first) await openFolder(page, 'new');
+        first = false;
+        await page.locator(`#objFile_${f.seq} .openDetail`).click({ force: true, timeout: 10000 });
+        // 詳細の「ファイルID」がこの資料の番号になり、「場所」が出るまで待つ
+        await page.waitForFunction((seq) => {
+          const L = [...document.querySelectorAll('body *')]
+            .filter((e) => e.offsetParent && e.children.length === 0 && e.textContent.trim())
+            .map((e) => e.textContent.trim());
+          return L[L.indexOf('ファイルID') + 1] === seq && L.includes('場所');
+        }, f.seq, { timeout: 10000 });
+        where = await page.evaluate(() => {
+          const L = [...document.querySelectorAll('body *')]
+            .filter((e) => e.offsetParent && e.children.length === 0 && e.textContent.trim())
+            .map((e) => e.textContent.trim());
+          const i = L.lastIndexOf('場所');
+          return i >= 0 && /^ホーム/.test(L[i + 1] || '') ? L[i + 1] : '';
+        });
+      } catch (e) { where = ''; }
+    }
+    const folder = where.replace(/^ホーム\s*(>\s*)?/, '').split(/\s*>\s*/).filter(Boolean).join(' / ');
+    out.push({ ...f, folder, located: !!where });
+  }
+  const unknown = out.filter((x) => x.seq && !knownSeqs.has(x.seq));
+  log(`新着ファイル画面：${out.length}件（記録にないもの ${unknown.length}件、うち場所が読めたもの ${unknown.filter((x) => x.located).length}件）`);
+  return { info: r.info, items: out };
+}
+
 // ---------- 棚をたどる ----------
-async function crawl(page, startSeq, startPath) {
+async function crawl(page, startSeq, startPath, level) {
   const files = {};
   const folderList = [];
   const warnings = [];
+  let skipped = 0;
   const queue = [{ seq: startSeq, path: startPath }];
   const seen = new Set();
   while (queue.length) {
@@ -183,6 +275,7 @@ async function crawl(page, startSeq, startPath) {
       files[k] = { folder: p, folseq: here, name: f.name, seq: f.seq, updated: f.updated, pages: f.pages };
     }
     for (const f of r.folders) {
+      if (!inScope([...(p ? p.split(' / ') : []), f.name], level)) { skipped++; continue; }
       let s = f.seq;
       if (!s) {
         s = await resolveFolderSeqByClick(page, here, f);
@@ -196,7 +289,7 @@ async function crawl(page, startSeq, startPath) {
 
     if (DEBUG && seen.size === 1) await saveDebug(page);
   }
-  return { files, folderList, warnings };
+  return { files, folderList, warnings, skipped };
 }
 
 async function saveDebug(page) {
@@ -239,12 +332,15 @@ const safeName = (s) => s.replace(/[\\/:*?"<>|]/g, '_').slice(0, 150);
 
 async function downloadOne(page, item, dir) {
   await openFolder(page, item.folseq);
-  const boxes = page.locator('#bookShelfContents .box.isFile:not(#fileTemplate)');
+  // 資料の番号が分かれば番号で、分からなければ名前で探す
+  const boxes = item.seq
+    ? page.locator(`#objFile_${item.seq}`)
+    : page.locator('#bookShelfContents .box.isFile:not(#fileTemplate)');
   const n = await boxes.count();
   for (let i = 0; i < n; i++) {
     const b = boxes.nth(i);
     const name = ((await b.locator('.fileNameForList').textContent().catch(() => '')) || (await b.locator('.fileName').textContent().catch(() => '')) || '').trim();
-    if (name !== item.name) continue;
+    if (!item.seq && name !== item.name) continue;
     // 詳細（ⓘ）を開き、「ダウンロード」と書かれたボタンだけを押す
     await b.locator('.openDetail').click({ force: true });
     await sleep(WAIT_MS);
@@ -306,10 +402,32 @@ async function main() {
     }
 
     const started = new Date();
-    const { files, folderList, warnings } = await crawl(page, null, '');
     const prev = fs.existsSync(SNAPSHOT) ? JSON.parse(fs.readFileSync(SNAPSHOT, 'utf8')) : null;
+    // 初回・第1日曜・--full は棚全体、ほかの日曜は週1の範囲まで、平日・土曜は毎朝の範囲だけ
+    const level = prev ? todaysLevel() : 'full';
+    const light = level !== 'full';
+    log({ full: '今日は棚全体を見ます', weekly: '今日は毎朝の範囲＋週1回の範囲を見ます', daily: '今日は毎朝の範囲を見ます' }[level]);
+    const { files, folderList, warnings, skipped } = await crawl(page, null, '', level);
+    if (light) log(`今日は見なかったフォルダ：${skipped}件`);
 
-    const snap = { taken_at: started.toISOString(), folder_count: folderList.length, file_count: Object.keys(files).length, folders: folderList, files };
+    // 新着ファイル画面（直近10日分）も毎回見る。たどったフォルダの外に入った資料もここで拾う
+    let newSeqs = null;
+    try {
+      const crawled = new Set(Object.values(files).map((v) => v.seq).filter(Boolean));
+      const known = new Set(crawled);
+      if (prev) for (const v of Object.values(prev.files)) if (v.seq) known.add(v.seq);
+      const nw = await readNewPage(page, known);
+      newSeqs = new Set(nw.items.map((x) => x.seq).filter(Boolean));
+      for (const x of nw.items) {
+        if (x.seq && known.has(x.seq)) continue; // すでに記録にある資料は、記録の場所のままにする
+        const folder = x.folder || '（場所不明）';
+        files[`${folder} / ${x.name}`] = { folder, folseq: 'new', name: x.name, seq: x.seq, updated: x.updated, pages: x.pages, via: 'new' };
+      }
+    } catch (e) {
+      warnings.push('新着ファイル画面を読めませんでした（フォルダをたどった分だけで判断しました）');
+    }
+
+    const snap = { taken_at: started.toISOString(), mode: level, folder_count: folderList.length, file_count: Object.keys(files).length, folders: folderList, files };
     if (!prev) {
       fs.writeFileSync(SNAPSHOT, JSON.stringify(snap, null, 1));
       const top = folderList.filter((f) => f.path && f.path.split(' / ').length <= 2);
@@ -320,10 +438,30 @@ async function main() {
       return;
     }
 
-    const added = Object.keys(files).filter((k) => !prev.files[k]).sort();
-    const changed = Object.keys(files).filter((k) => prev.files[k] && files[k].updated && prev.files[k].updated && files[k].updated !== prev.files[k].updated).sort();
-    // 読み取りに失敗したフォルダがあっても、前回の記録を消さないよう合成して保存する
-    const merged = { ...snap, files: { ...prev.files, ...files } };
+    // 資料の番号で見分ける：別のフォルダ（「開催終了分」など）へ移されただけのものは新着にしない
+    const prevBySeq = {};
+    for (const [k, v] of Object.entries(prev.files)) if (v.seq) prevBySeq[v.seq] = k;
+    const before = (k) => prev.files[k] || (files[k].seq && prev.files[prevBySeq[files[k].seq]]) || null;
+    const added = Object.keys(files).filter((k) => !before(k)).sort();
+    const changed = Object.keys(files).filter((k) => { const b = before(k); return b && files[k].updated && b.updated && files[k].updated !== b.updated; }).sort();
+
+    // 記録の保存：棚全体を問題なく読めた日は、その日の一覧で置き換える。
+    // 一部だけ見た日・読み取りに失敗があった日は、前回の記録を消さないよう合成する（移動したものは古い場所を消す）
+    let mergedFiles;
+    if (!light && !warnings.length) {
+      mergedFiles = files;
+    } else {
+      const nowSeqs = new Set(Object.values(files).map((v) => v.seq).filter(Boolean));
+      mergedFiles = {};
+      for (const [k, v] of Object.entries(prev.files)) if (!(v.seq && nowSeqs.has(v.seq) && !files[k])) mergedFiles[k] = v;
+      Object.assign(mergedFiles, files);
+    }
+    let mergedFolders = folderList;
+    if (light) {
+      const seen = new Set(folderList.map((f) => f.seq));
+      mergedFolders = [...folderList, ...(prev.folders || []).filter((f) => !seen.has(f.seq))];
+    }
+    const merged = { ...snap, folder_count: mergedFolders.length, file_count: Object.keys(mergedFiles).length, folders: mergedFolders, files: mergedFiles };
     fs.writeFileSync(SNAPSHOT, JSON.stringify(merged, null, 1));
 
     if (!added.length && !changed.length) {
@@ -336,6 +474,17 @@ async function main() {
     added.forEach((k) => lines.push(k));
     changed.forEach((k) => lines.push(`${k}（更新）`));
     lines.forEach((l) => console.log(l));
+
+    // 確かめたいこと：フォルダには入ったのに新着ファイル画面に出なかった資料（閲覧者を限定した資料など）
+    if (newSeqs) {
+      const tenDaysAgo = new Date(Date.now() - 10 * 86400000).toLocaleString('sv-SE', { timeZone: 'Asia/Tokyo' }).replace(/-/g, '/');
+      const missed = added.filter((k) => files[k].seq && !newSeqs.has(files[k].seq) && (files[k].updated || '') >= tenDaysAgo);
+      if (missed.length) {
+        const note = '（新着ファイル画面には出ていなかったもの）\n' + missed.join('\n');
+        console.log(note);
+        lines.push(note);
+      }
+    }
 
     let dlNote = '';
     if (!NO_DOWNLOAD && added.length) {
