@@ -106,6 +106,9 @@ async function readFolder(page) {
 
     // 箱（フォルダ・ファイル）の番号を、要素の属性や jQuery の付帯情報から探す
     const findSeq = (el, kind) => {
+      // 実際の画面では id="objFolder_36123" / id="objFile_15780" の形で番号が入っている
+      const idm = (el.id || '').match(kind === 'folder' ? /^objFolder_(\d+)$/ : /^objFile_(\d+)$/);
+      if (idm) return idm[1];
       const cands = {};
       for (const a of el.attributes) cands[a.name] = a.value;
       try { if (window.jQuery) Object.assign(cands, window.jQuery(el).data() || {}); } catch (e) {}
