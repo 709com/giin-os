@@ -31,19 +31,19 @@ def has_stream(name):
 
 
 def lay_out(first, pointer, rest, tag):
-    """親の形（2026-11-12 先生決定）：見出し【】1つ＋最初の数行＋「〜は、次のポストに。」を1つ目のまとまりに。
-    残りは3行ずつまとめ、まとまりの間とハッシュタグの前は1行空ける。"""
-    blocks = ["\n".join(list(first) + [pointer])]
-    rest = [x for x in rest if x]
-    for i in range(0, len(rest), 3):
-        blocks.append("\n".join(rest[i:i + 3]))
+    """親の形（2026-11-12 先生決定）：
+    1行目（見出し【】1つ＋つかみ）／空行／2行（要点＋「〜へのリンクは、次のポストに。」）／空行／2行ずつ…／空行／ハッシュタグ"""
+    body = [x for x in list(first[1:]) + list(rest) if x]
+    blocks = [first[0], "\n".join(body[:1] + [pointer])]
+    body = body[1:]
+    for i in range(0, len(body), 2):
+        blocks.append("\n".join(body[i:i + 2]))
     return "\n\n".join(blocks + [tag])
 
 
 def _bocho_lines(honkaigi):
-    return (["傍聴は当日午前8時30分から、23階の区議会事務局で受付。",
-             "定員は" + ("63人" if honkaigi else "15人") + "で、超えた場合は抽選です。"]
-            + ([] if honkaigi else ["会場は26階スカイホールです。"]))
+    return ["傍聴は当日午前8時30分から、23階の区議会事務局で受付。",
+            "定員63人で、超えた場合は抽選です。" if honkaigi else "定員15人（超えた場合は抽選）、会場は26階スカイホールです。"]
 
 
 def _time_phrase(t):
@@ -136,9 +136,9 @@ def questions_thread(q, date_iso, meeting_time="午後2時"):
     if not day or not day["speakers"]:
         return None
     n = len(day["speakers"])
-    parent = lay_out([f"【一般質問】{fmt_date(d)}{_time_phrase(meeting_time)}、本会議で一般質問が行われます。", f"登壇は{n}人です。"],
+    parent = lay_out([f"【一般質問】{fmt_date(d)}{_time_phrase(meeting_time)}、本会議で一般質問が行われます。", f"登壇は{n}人で、インターネット中継もあります。"],
                      "通告の項目と中継へのリンクは、次のポストに。",
-                     ["インターネット中継があります。"] + _bocho_lines(True), HASHTAG_GIKAI)
+                     _bocho_lines(True), HASHTAG_GIKAI)
     replies = ["通告の一覧（区議会のページ）と中継のページ\n" + q["url"] + "\n" + S.CHUKEI_URL]
     for i, sp in enumerate(day["speakers"], start=1):
         t = f"{i}人目　{sp['name']} 議員（{sp['party']}）\n" if sp["party"] else f"{i}人目　{sp['name']} 議員\n"
@@ -175,7 +175,7 @@ def questions_published_notice(q):
     total = sum(len(x["speakers"]) for x in days)
     parent = lay_out(["【通告】本会議の一般質問の通告一覧が公開されました。", f"あわせて{total}人が登壇します。"],
                      "日ごとの登壇者とリンクは、次のポストに。",
-                     [fmt_date(datetime.date.fromisoformat(x["date"])) + f"：{len(x['speakers'])}人" for x in days], HASHTAG_GIKAI)
+                     ["、".join(fmt_date(datetime.date.fromisoformat(x["date"])) + f"{len(x['speakers'])}人" for x in days)], HASHTAG_GIKAI)
     reply = "\n".join(f"{fmt_date(datetime.date.fromisoformat(x['date']))}：" + "、".join(sp["name"] for sp in x["speakers"]) for x in days)
     reply += "\n" + q["url"]
     return parent, [reply]
@@ -201,7 +201,7 @@ def daily_digest(items, d):
     for it in items:
         c = re.sub(r"^.+?部", "", it.get("creator", "")) or it.get("creator", "")
         lines.append(f"・{it['title']}（{c}）" if c else f"・{it['title']}")
-    parent = (f"【まとめ】{fmt_date(d)}に区のホームページで更新されたお知らせです（{len(items)}件）。\n"
+    parent = (f"【まとめ】{fmt_date(d)}に区のホームページで更新されたお知らせです（{len(items)}件）。\n\n"
               "一覧へのリンクは、次のポストに。\n\n" + "\n".join(lines) + "\n\n" + HASHTAG_KU)
     return parent, ["区の新着情報の一覧\n" + S.SHINCHAKU_INDEX]
 
@@ -221,8 +221,14 @@ URL：{url}
 
 # 書き方の決まり（すべて守る）
 - 親：中身を表す3文字程度の見出しを【】で1つだけ付けて始め（例【先着順】【申込み】【助成】【募集】）、見出しを2つ並べない。見出しに続けて「誰に関係があるか」を書く（例「小学6年生から高校1年生相当の男の子がいるご家庭へ。」）。
-- 親の形：1文ごとに改行し、3行ほどで1つのまとまりにして、まとまりの間は1行空ける。最初のまとまりの3行目に「（何）へのリンクは、次のポストに。」と書く（例「申込み方法へのリンクは、次のポストに。」）。2つ目以降のまとまりに「誰が・何を・いつまで」を出典の本文から抜き出した事実だけで書く。「日時：」「対象：」「申込み：」のような見出し付きの1行も使ってよい。リンクは入れない。「続きはコメントに」「詳細は返信欄に」は書かない。
-- 返信も同じく1文ごとに改行し、3行ほどでまとめて1行空ける。
+- 親の形（この形だけ）：
+  1行目：見出しと「誰に関係があるか」
+  （1行空ける）
+  2行：要点を1行、次の行に「（何）へのリンクは、次のポストに。」（例「申込み方法へのリンクは、次のポストに。」）
+  （1行空ける）
+  2行：「いつまで・どこで・対象」などの中身。「日時：」「対象：」「申込み：」のような見出し付きの1行も使ってよい
+  事実は出典の本文から抜き出したものだけ。リンクは入れない。「続きはコメントに」「詳細は返信欄に」は書かない。
+- 返信も1文ごとに改行し、2行ほどでまとめて1行空ける。
 - 返信：「どうやって・どこで・誰に聞くか」（申込み方法、場所、問い合わせ先、電話番号など）を出典の本文から抜き出して書く。文末は出典のURLを1行で置く。
 - 本文にない数字・名前・日付は書かない。推測や評価の言葉（便利、おすすめ、ぜひ、注目 など）は書かない。
 - 「新たに」「始まります」「スタート」は書かない（更新日と開始日が違うことがあるため）。
@@ -256,7 +262,8 @@ def compose_type2(item, text):
     reply = norm_block(m.group(2)) if m else ""
     parent = URL_RE.sub("", parent).strip()
     if "次のポスト" not in parent:
-        parent = parent + "\n\nリンクは、次のポストに。"
+        ls = parent.split("\n", 1)
+        parent = ls[0] + "\n\nリンクは、次のポストに。" + ("\n\n" + ls[1].strip() if len(ls) > 1 and ls[1].strip() else "")
     parent = parent + "\n\n" + HASHTAG_KU
     if item["url"] not in reply:
         reply = (reply + "\n" + item["url"]).strip()
@@ -269,7 +276,7 @@ def compose_type2(item, text):
 
 
 def fallback_type2(item):
-    parent = f"【お知らせ】{item['title']}（{item.get('creator','')}）\nリンクは、次のポストに。\n\n{HASHTAG_KU}"
+    parent = f"【お知らせ】{item['title']}（{item.get('creator','')}）\n\nリンクは、次のポストに。\n\n{HASHTAG_KU}"
     return parent, item["url"]
 
 
