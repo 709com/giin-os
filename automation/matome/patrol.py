@@ -573,7 +573,7 @@ def post_row(row):
     if not r or not r.get("文面案"):
         print(f"結果: 候補シート{row}行目に文面がありません"); return 1
     parent, replies = C.from_cell(r["文面案"])
-    problems = C.check_post(parent, replies)
+    problems = C.check_post(parent, replies, max_len=None)   # 長さはこの下でプレミアムの有無を見て判断
     if problems:
         print("結果: 機械チェックで止めました:", "、".join(problems)); return 1
     x = XClient(dry_run=False)
