@@ -1,14 +1,437 @@
 {
- "rss_seen": {},
- "council_index": {},
- "sessions": {},
- "meeting_pages": {},
- "questions_pages": {},
- "sokuho": [],
+ "rss_seen": {
+  "https://www.city.bunkyo.lg.jp/b018/p003469.html": {
+   "first": "2026-11-10",
+   "last": "2026-11-10",
+   "title": "共生のための文京地域支援フォーラム",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b013/koseki_furigana.html": {
+   "first": "2026-11-10",
+   "last": "2026-11-10",
+   "title": "氏名の振り仮名",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b023/p007683.html": {
+   "first": "2026-11-10",
+   "last": "2026-11-10",
+   "title": "令和9年度4月区立幼稚園・認定こども園入園募集",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b014/p003949.html": {
+   "first": "2026-11-09",
+   "last": "2026-11-09",
+   "title": "文京菊まつり",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b039/p001003.html": {
+   "first": "2026-11-09",
+   "last": "2026-11-09",
+   "title": "年末年始のごみ収集",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p007613.html": {
+   "first": "2026-11-07",
+   "last": "2026-11-07",
+   "title": "東京大学大学院医学系研究科附属グローバルナーシングリサーチセンターとの連携事業",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b006/p006742.html": {
+   "first": "2026-11-06",
+   "last": "2026-11-06",
+   "title": "文京区一般任期付職員（心理・係長級）募集案内",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b022/p001687.html": {
+   "first": "2026-11-06",
+   "last": "2026-11-06",
+   "title": "ベビーシッター利用料助成事業",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b022/p001689.html": {
+   "first": "2026-11-06",
+   "last": "2026-11-06",
+   "title": "ふたごちゃん・みつごちゃん家事・育児サポート利用料助成制度",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b003/p008273.html": {
+   "first": "2026-11-06",
+   "last": "2026-11-06",
+   "title": "「令和8年熊本地震」における被災地支援について",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b014/p000021.html": {
+   "first": "2026-11-05",
+   "last": "2026-11-05",
+   "title": "区制80周年記念事業文京シビックホール名誉館長特別公演【申込期間延長】",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b014/p006728/index.html": {
+   "first": "2026-11-05",
+   "last": "2026-11-05",
+   "title": "シビックホール",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b004/p006758.html": {
+   "first": "2026-11-05",
+   "last": "2026-11-05",
+   "title": "文京区LoGoフォーム【復旧しました】",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b019/p006559.html": {
+   "first": "2026-11-05",
+   "last": "2026-11-05",
+   "title": "令和8年度エアコン設置緊急支援は終了しました",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b021/p006065.html": {
+   "first": "2026-11-05",
+   "last": "2026-11-05",
+   "title": "年金の日",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b006/p006747.html": {
+   "first": "2026-11-04",
+   "last": "2026-11-04",
+   "title": "【令和8年10月14日公開】オンライン説明会の動画を公開しています!",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b028/p007564.html": {
+   "first": "2026-11-02",
+   "last": "2026-11-02",
+   "title": "男性HPVワクチン任意接種費用助成",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b016/p003755.html": {
+   "first": "2026-10-30",
+   "last": "2026-10-30",
+   "title": "研修・講演会について",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b040/p007695.html": {
+   "first": "2026-10-29",
+   "last": "2026-10-29",
+   "title": "文京シビックセンター25階自動販売機設置に係る入札の結果について",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b014/p004199.html": {
+   "first": "2026-10-28",
+   "last": "2026-10-28",
+   "title": "かなざわ講座",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b012/p006536.html": {
+   "first": "2026-10-28",
+   "last": "2026-10-28",
+   "title": "令和9年度文京区消費生活センター会計年度任用職員（消費生活相談員）募集",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b006/p006720.html": {
+   "first": "2026-10-28",
+   "last": "2026-10-28",
+   "title": "令和8年度文京区会計年度任用職員（事務・登録制）募集",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p007666.html": {
+   "first": "2026-10-27",
+   "last": "2026-10-27",
+   "title": "令和8年度第3回文京区地域包括ケア推進委員会 資料・会議録",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p003237.html": {
+   "first": "2026-10-26",
+   "last": "2026-10-26",
+   "title": "介護施設おしごとトライアル（介護施設ワークサポート事業）",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b020/p007753.html": {
+   "first": "2026-10-26",
+   "last": "2026-10-26",
+   "title": "ケアプランデータ連携システム活用促進事業",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b040/p007694.html": {
+   "first": "2026-10-26",
+   "last": "2026-10-26",
+   "title": "文京シビックセンターにおける自動販売機設置事業者の募集",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b003/p006024/index.html": {
+   "first": "2026-10-23",
+   "last": "2026-10-23",
+   "title": "文京区LINE公式アカウント",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b009/p000006/index.html": {
+   "first": "2026-10-22",
+   "last": "2026-10-22",
+   "title": "防災ポータル及び防災アプリについて",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b023/p007699.html": {
+   "first": "2026-10-22",
+   "last": "2026-10-22",
+   "title": "（復旧しました）区立保育園のコドモン及びeメッセージの緊急メンテナンスについて",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b021/p006063.html": {
+   "first": "2026-10-22",
+   "last": "2026-10-22",
+   "title": "国保年金課からお送りした督促状の封筒デザインにつきまして",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b014/p007628.html": {
+   "first": "2026-10-20",
+   "last": "2026-10-20",
+   "title": "全国競技かるた 文の京アゼリア・カップ",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b034/p001115.html": {
+   "first": "2026-10-16",
+   "last": "2026-10-16",
+   "title": "交通安全ポスター",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b015/p004472.html": {
+   "first": "2026-10-16",
+   "last": "2026-10-16",
+   "title": "令和8年度実施予定の区立スポーツ施設改修工事等について",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p003153/index.html": {
+   "first": "2026-10-15",
+   "last": "2026-10-15",
+   "title": "高齢者あんしん相談センター富坂",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p003155.html": {
+   "first": "2026-10-15",
+   "last": "2026-10-15",
+   "title": "高齢者あんしん相談センター富坂分室",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p007671.html": {
+   "first": "2026-10-15",
+   "last": "2026-10-15",
+   "title": "令和8年度第4回文京区地域包括ケア推進委員会 資料・会議録",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b019/p003139.html": {
+   "first": "2026-10-14",
+   "last": "2026-10-14",
+   "title": "文京区、千代田区、中央区、台東区連携イベント",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p003247.html": {
+   "first": "2026-10-13",
+   "last": "2026-10-13",
+   "title": "【令和8年11月6日~8日開催】文京総合福祉センター祭り",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b048/p007700.html": {
+   "first": "2026-10-13",
+   "last": "2026-10-13",
+   "title": "文京区学校給食調理業務委託の参加事業者募集について（プロポーザル方式）",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b008/p007538.html": {
+   "first": "2026-10-13",
+   "last": "2026-10-13",
+   "title": "公的年金等の受給者の扶養親族等申告書について",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p003309.html": {
+   "first": "2026-10-09",
+   "last": "2026-10-09",
+   "title": "文京区地域包括ケア推進委員会の開催のご案内",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b028/p001465.html": {
+   "first": "2026-10-05",
+   "last": "2026-10-05",
+   "title": "小児慢性特定疾病医療費助成の申請について（区民の方へ）",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b020/p000608/index.html": {
+   "first": "2026-10-02",
+   "last": "2026-10-02",
+   "title": "【9月18日より順次公開!】オラキオの介護すてき発見!!2026",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b031/p004542/index.html": {
+   "first": "2026-10-01",
+   "last": "2026-10-01",
+   "title": "不燃化推進事業",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p007621.html": {
+   "first": "2026-09-28",
+   "last": "2026-09-28",
+   "title": "【申込終了しました】エンドオブライフケア（看取り）リスキルプログラム",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b003/p008254.html": {
+   "first": "2026-09-28",
+   "last": "2026-09-28",
+   "title": "会議・審議会等の傍聴について（更新）",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b032/p004647.html": {
+   "first": "2026-09-24",
+   "last": "2026-09-24",
+   "title": "住まいの相続・終活セミナー&個別無料相談会",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p007656.html": {
+   "first": "2026-09-15",
+   "last": "2026-09-15",
+   "title": "令和8年度第2回文京区地域包括ケア推進委員会 資料・会議録",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b029/p004999.html": {
+   "first": "2026-09-15",
+   "last": "2026-09-15",
+   "title": "令和8年度文京区保健サービスセンターに係る精神保健福祉士の募集について",
+   "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b022/p001690.html": {
+   "first": "2026-09-14",
+   "last": "2026-09-14",
+   "title": "おうち家事・育児サポート事業",
+   "count": 1
+  }
+ },
+ "council_index": {
+  "https://www.city.bunkyo.lg.jp/kugikai/oshirase/honkaigi/r08/index.html": [
+   "https://www.city.bunkyo.lg.jp/kugikai/p007918.html",
+   "https://www.city.bunkyo.lg.jp/kugikai/p007907.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000050.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000047.html",
+   "https://www.city.bunkyo.lg.jp/kugikai/p007890.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000026.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000043.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000034.html",
+   "https://www.city.bunkyo.lg.jp/kugikai/p007870.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000030.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000040.html",
+   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000025.html"
+  ]
+ },
+ "sessions": {
+  "https://www.city.bunkyo.lg.jp/kugikai/p007918.html": {
+   "title": "区議会の日程・審議内容（令和8年11月定例議会）",
+   "last_date": "2026-12-11",
+   "first_date": "2026-11-17"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/p007907.html": {
+   "title": "区議会の日程・審議内容（令和8年9月定例議会）",
+   "last_date": "2026-10-22",
+   "first_date": "2026-09-10"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000050.html": {
+   "title": "区議会の日程・審議内容（令和8年7月27日）",
+   "last_date": "2026-07-27",
+   "first_date": "2026-07-27"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000047.html": {
+   "title": "区議会の日程・審議内容（令和8年7月臨時議会）",
+   "last_date": "2026-07-24",
+   "first_date": "2026-07-24"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/p007890.html": {
+   "title": "区議会の日程・審議内容（令和8年6月定例議会）",
+   "last_date": "2026-06-25",
+   "first_date": "2026-06-02"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000026.html": {
+   "title": "区議会の日程・審議内容（令和8年5月招集議会）",
+   "last_date": "2026-05-12",
+   "first_date": "2026-05-12"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000043.html": {
+   "title": "区議会の日程・審議内容（令和8年4月27日）",
+   "last_date": "2026-04-27",
+   "first_date": "2026-04-27"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000034.html": {
+   "title": "区議会の日程・審議内容（令和8年3月31日）",
+   "last_date": "2026-03-31",
+   "first_date": "2026-03-31"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/p007870.html": {
+   "title": "区議会の日程・審議内容（令和8年2月定例議会）",
+   "last_date": "2026-03-17",
+   "first_date": "2026-02-09"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000030.html": {
+   "title": "区議会の日程・審議内容（令和8年1月30日）",
+   "last_date": "2026-01-30",
+   "first_date": "2026-01-30"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000040.html": {
+   "title": "区議会の日程・審議内容（令和8年1月臨時議会）",
+   "last_date": "2026-01-26",
+   "first_date": "2026-01-26"
+  },
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000025.html": {
+   "title": "区議会の日程・審議内容（令和8年1月20日）",
+   "last_date": "2026-01-20",
+   "first_date": "2026-01-20"
+  }
+ },
+ "meeting_pages": {
+  "https://www.city.bunkyo.lg.jp/b046/kugikai/p000056.html": {
+   "published": false,
+   "sig": "fcb1ea7a58b64520024f31d58802d00c"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/p007924.html": {
+   "published": false,
+   "sig": "13842d71af9ebf8fd0799cea259c7a12"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/p007919.html": {
+   "published": false,
+   "sig": "bb49f902c31905d9e08b7b29016fcb29"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/bouchou/p000007.html": {
+   "published": false,
+   "sig": "f11c6c1a22d1c81633260a6fa8af1745"
+  }
+ },
+ "questions_pages": {
+  "https://www.city.bunkyo.lg.jp/kugikai/p007926.html": {
+   "published": false
+  }
+ },
+ "sokuho": [
+  "https://www.city.bunkyo.lg.jp/documents/6807/0910giun.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0910kessan.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0910zenkyo.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0918kodomo1.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0918kodomo2.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0924jichi.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0924jichi2.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0925saitai1.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0925saitai2.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0928giun.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0929kousei.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0930bunkyo1.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/0930bunkyo2.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1001kensetsu.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1002soumukumin.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1005soumukumin.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1007bunkyo.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1007giun.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1007kousei.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1007soumukumin.pdf",
+  "https://www.city.bunkyo.lg.jp/documents/6807/1007zenkyo.pdf"
+ ],
  "candidates": {},
  "posted": {},
- "digest_pool": {},
+ "digest_pool": {
+  "2026-11-11": []
+ },
  "pending_replies": [],
  "alerts": {},
- "last_post_at": "2026-11-11 11:00"
+ "last_post_at": "2026-11-11 11:00",
+ "last_run": "2026-11-11 11:29"
 }
