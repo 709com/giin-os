@@ -32,9 +32,9 @@
   },
   "https://www.city.bunkyo.lg.jp/b017/p007613.html": {
    "first": "2026-11-07",
-   "last": "2026-11-07",
+   "last": "2026-11-10",
    "title": "東京大学大学院医学系研究科附属グローバルナーシングリサーチセンターとの連携事業",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b006/p006742.html": {
    "first": "2026-11-06",
@@ -299,6 +299,12 @@
    "last": "2026-09-14",
    "title": "おうち家事・育児サポート事業",
    "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b017/p007669.html": {
+   "first": "2026-11-10",
+   "last": "2026-11-10",
+   "title": "暮らしの保健室@東大GNRCオープンラボ",
+   "count": 1
   }
  },
  "council_index": {
@@ -426,12 +432,26 @@
   "https://www.city.bunkyo.lg.jp/documents/6807/1007zenkyo.pdf"
  ],
  "candidates": {},
- "posted": {},
+ "posted": {
+  "2026-11-11": {
+   "singles": 0,
+   "digest": false
+  }
+ },
  "digest_pool": {
-  "2026-11-11": []
+  "2026-11-11": [
+   {
+    "title": "東京大学大学院医学系研究科附属グローバルナーシングリサーチセンターとの連携事業",
+    "creator": "福祉部高齢福祉課",
+    "url": "https://www.city.bunkyo.lg.jp/b017/p007613.html"
+   }
+  ]
  },
  "pending_replies": [],
- "alerts": {},
+ "alerts": {
+  "crash:2026-11-11": "2026-11-11 18:46"
+ },
  "last_post_at": "2026-11-11 14:01",
- "last_run": "2026-11-11 11:29"
+ "last_run": "2026-11-11 18:46",
+ "last_new_item_at": "2026-11-11 18:46"
 }
