@@ -41,7 +41,7 @@ def meeting_notice(m, meeting_page=None):
     import datetime
     d = datetime.date.fromisoformat(m["date"])
     name = m["name"]
-    body = f"【議会】{fmt_date(d)}{_time_phrase(m['time'])}、{name}が開かれます。"
+    body = f"【区議会】{fmt_date(d)}{_time_phrase(m['time'])}、{name}が開かれます。"
     body += (BOCHO_HONKAIGI + ("中継もあります。" if has_stream(name) else "")) if is_honkaigi(name) else BOCHO_IINKAI
     parent = body + "詳細は返信欄に。\n" + HASHTAG_GIKAI
     replies = []
@@ -68,7 +68,7 @@ def day_notice(meetings, pages=None):
         return meeting_notice(meetings[0], pages.get(meetings[0]["url"]))
     d = datetime.date.fromisoformat(meetings[0]["date"])
     parts = "、".join(f"{_time_phrase(m['time'])}{m['name']}" for m in meetings)
-    body = f"【議会】{fmt_date(d)}は、{parts}が開かれます。"
+    body = f"【区議会】{fmt_date(d)}は、{parts}が開かれます。"
     body += "傍聴は当日午前8時30分から、シビックセンター23階の区議会事務局で受付（本会議は定員63人、委員会は15人。超えた場合は抽選）。"
     if any(not is_honkaigi(m["name"]) for m in meetings):
         body += "委員会の会場は26階スカイホールです。"
@@ -93,7 +93,7 @@ def session_overview(sess):
     q_time = next((x["time"] for x in ms if "一般質問" in x["name"]), "")
     last = ms[-1]
     ld = datetime.date.fromisoformat(last["date"])
-    parent = f"【議会】{title}は、{fmt_date(fd)}{_time_phrase(first['time'])}の{first['name']}で始まります。"
+    parent = f"【区議会】{title}は、{fmt_date(fd)}{_time_phrase(first['time'])}の{first['name']}で始まります。"
     if q_dates:
         parent += "一般質問は" + "、".join(fmt_date(datetime.date.fromisoformat(x)) for x in q_dates) + f"{_time_phrase(q_time)}。"
     parent += f"最終日は{fmt_date(ld)}の{last['name']}です。詳細は返信欄に。\n" + HASHTAG_GIKAI
@@ -113,7 +113,7 @@ def questions_thread(q, date_iso, meeting_time="午後2時"):
     if not day or not day["speakers"]:
         return None
     n = len(day["speakers"])
-    parent = (f"【議会】{fmt_date(d)}{_time_phrase(meeting_time)}、本会議で一般質問が行われます。登壇は{n}人。"
+    parent = (f"【区議会】{fmt_date(d)}{_time_phrase(meeting_time)}、本会議で一般質問が行われます。登壇は{n}人。"
               f"{CHUKEI}{BOCHO_HONKAIGI}通告の項目は返信欄に。\n" + HASHTAG_GIKAI)
     replies = ["通告の一覧（区議会のページ）と中継のページ\n" + q["url"] + "\n" + S.CHUKEI_URL]
     for i, sp in enumerate(day["speakers"], start=1):
@@ -134,7 +134,7 @@ def materials_notice(mp, date_iso=None):
     name = re.sub(r"（.*?）$", "", mp["title"])
     when = fmt_date(datetime.date.fromisoformat(day["date"])) + "の" if day["date"] else ""
     nd = len(day["docs"])
-    parent = f"【会議録・資料】{when}{name}の審議内容" + ("と資料" if nd else "") + "が区議会のページに公開されました。"
+    parent = f"【区議会】【資料】{when}{name}の審議内容" + ("と資料" if nd else "") + "が区議会のページに公開されました。"
     if nd:
         parent += f"資料は{nd}件。"
     parent += "件名は返信欄に。\n" + HASHTAG_GIKAI
@@ -150,7 +150,7 @@ def questions_published_notice(q):
     import datetime
     days = [x for x in q["days"] if x["speakers"]]
     total = sum(len(x["speakers"]) for x in days)
-    parent = (f"【会議録・資料】本会議の一般質問の通告一覧が公開されました。"
+    parent = (f"【区議会】【通告】本会議の一般質問の通告一覧が公開されました。"
               + "、".join(fmt_date(datetime.date.fromisoformat(x["date"])) + f"（{len(x['speakers'])}人）" for x in days)
               + f"、あわせて{total}人が登壇します。各議員の項目は返信欄に。\n" + HASHTAG_GIKAI)
     reply = "\n".join(f"{fmt_date(datetime.date.fromisoformat(x['date']))}：" + "、".join(sp["name"] for sp in x["speakers"]) for x in days)
@@ -164,7 +164,7 @@ def sokuho_notice(new_pdfs):
     for c, _, _ in new_pdfs:
         if c not in coms:
             coms.append(c)
-    parent = (f"【会議録・資料】委員会会議録の速報版が公開されました（{'、'.join(coms)}）。"
+    parent = (f"【区議会】【会議録】委員会会議録の速報版が公開されました（{'、'.join(coms)}）。"
               "速報版は未定稿で、正式な会議録が出ると差し替えられます。日付と一覧は返信欄に。\n" + HASHTAG_GIKAI)
     reply = "\n".join(f"・{c}　{t}" for c, t, _ in new_pdfs[:20]) + "\n" + S.SOKUHO_URL
     return parent, [reply]
@@ -173,7 +173,7 @@ def sokuho_notice(new_pdfs):
 # ---------- 型4：その日の区のお知らせまとめ ----------
 def daily_digest(items, d):
     """items: [{title, creator}]"""
-    parent = f"【区のお知らせまとめ】{fmt_date(d)}に区のホームページで更新されたお知らせです（{len(items)}件）。一覧へのリンクは返信欄に。\n"
+    parent = f"【文京区】【まとめ】{fmt_date(d)}に区のホームページで更新されたお知らせです（{len(items)}件）。一覧へのリンクは返信欄に。\n"
     for it in items:
         c = re.sub(r"^.+?部", "", it.get("creator", "")) or it.get("creator", "")
         parent += f"・{it['title']}（{c}）\n" if c else f"・{it['title']}\n"
@@ -195,14 +195,14 @@ URL：{url}
 ---本文ここまで---
 
 # 書き方の決まり（すべて守る）
-- 親：「【区のお知らせ】」で始め、次に「誰に関係があるか」を書く（例「小学6年生から高校1年生相当の男の子がいるご家庭へ。」）。続けて「誰が・何を・いつまで」を出典の本文から抜き出した事実だけで書く。最後は「詳細は返信欄に。」で締める。リンクは入れない。
+- 親：「【文京区】」で始め、次に「誰に関係があるか」を書く（例「小学6年生から高校1年生相当の男の子がいるご家庭へ。」）。続けて「誰が・何を・いつまで」を出典の本文から抜き出した事実だけで書く。最後は「詳細は返信欄に。」で締める。リンクは入れない。
 - 返信：「どうやって・どこで・誰に聞くか」（申込み方法、場所、問い合わせ先、電話番号など）を出典の本文から抜き出して書く。文末は出典のURLを1行で置く。
 - 本文にない数字・名前・日付は書かない。推測や評価の言葉（便利、おすすめ、ぜひ、注目 など）は書かない。
 - 「新たに」「始まります」「スタート」は書かない（更新日と開始日が違うことがあるため）。
 - 絵文字、感嘆符、決まり文句の添え文（「ぜひご覧ください」等）は書かない。ハッシュタグは書かない（こちらで付ける）。
 - 難しい役所言葉は言い換える。丁寧語。親は140字前後、返信は200字以内。
 - 日付は「11月5日（水）」のように曜日まで書く。ただし本文に曜日が無い場合は曜日を付けない。
-- 抜き出せる事実が本文に無ければ、親は「【区のお知らせ】{title}（{creator}）。詳細は返信欄に。」とだけ書き、返信はURLだけにする。
+- 抜き出せる事実が本文に無ければ、親は「【文京区】{title}（{creator}）。詳細は返信欄に。」とだけ書き、返信はURLだけにする。
 
 # 出力形式（この形式だけ。前置きや説明は書かない）
 ===親===
@@ -242,7 +242,7 @@ def compose_type2(item, text):
 
 
 def fallback_type2(item):
-    parent = f"【区のお知らせ】{item['title']}（{item.get('creator','')}）。詳細は返信欄に。\n{HASHTAG_KU}"
+    parent = f"【文京区】{item['title']}（{item.get('creator','')}）。詳細は返信欄に。\n{HASHTAG_KU}"
     return parent, item["url"]
 
 
@@ -259,9 +259,11 @@ def check_post(parent, replies, source_text=None, hashtag=None, banned=BANNED_PH
     if "返信欄に" not in parent and "続きはコメントに" not in parent:
         p.append("親に「続きはコメントに」（または「詳細は返信欄に」）が無い")
     tags = re.findall(r"#\S+", parent)
-    if len(tags) != 1 or tags[0] not in (HASHTAG_GIKAI, HASHTAG_KU):
-        p.append(f"ハッシュタグが1個でない: {tags}")
-    if hashtag and tags and tags[0] != hashtag:
+    if not 1 <= len(tags) <= 3:
+        p.append(f"ハッシュタグが1〜3個でない: {tags}")
+    if not (set(tags) & {HASHTAG_GIKAI, HASHTAG_KU}):
+        p.append("ハッシュタグに #文京区 か #文京区議会 が無い")
+    if hashtag and tags and hashtag not in tags:
         p.append("ハッシュタグの種類が違う")
     whole = parent + "\n" + "\n".join(replies)
     if EMOJI_RE.search(whole):
