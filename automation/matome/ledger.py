@@ -10,7 +10,7 @@ LOCAL_PATH = Path("matome/ledger_local.json")
 SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets"
 
 HEADERS = {
-    "候補": ["拾った日時", "掲載日", "情報源", "型", "件名", "分野", "担当課", "URL", "文面案", "単独/まとめ", "確認", "備考"],
+    "候補": ["状態", "拾った日時", "掲載日", "情報源", "型", "件名", "分野", "担当課", "URL", "文面案", "単独/まとめ", "確認", "備考"],
     "投稿台帳": ["日時", "アカウント", "型", "リンク", "単価（ドル）", "元資料", "確認", "区分", "投稿ID", "本文"],
     "月次照合": ["年月", "アカウント", "台帳の本数", "台帳の合計（ドル）", "請求額（ドル）", "差", "差の理由", "証拠の保存先"],
     "xAIクレジット": ["日付", "アカウント", "受け取った額（ドル）", "使った額（ドル）", "使い道", "備考"],
@@ -18,6 +18,24 @@ HEADERS = {
 }
 DEFAULT_SETTINGS = {"試運転": "オン", "停止スイッチ": "オフ", "1日の単独投稿の上限": "3",
                     "先生の確認": "議会のみ", "投票日": "未定", "会派の月の上限（ドル）": "30"}
+
+
+def status_mark(v):
+    """候補シート左端の「状態」列のマーク（2026-11-14 先生の指示：スマホで見やすく）"""
+    v = (v or "").strip()
+    if v.startswith("投稿済"):
+        return "✅ 投稿済"
+    if v == "OK" or (v.startswith("OK（") and "待機" in v):
+        return "🟢 OK・出番待ち"
+    if v == "自動待ち":
+        return "🟢 自動で出番待ち"
+    if v == "ストック":
+        return "📦 ストック"
+    if v == "未" or v.startswith("ストック（確認待ち"):
+        return "⏳ 先生の確認待ち"
+    if "要修正" in v or "要確認" in v:
+        return "⚠️ 要確認"
+    return ""
 
 
 class Ledger:
@@ -115,6 +133,8 @@ class Ledger:
     def append(self, sheet, record):
         """record は {列名: 値}。列の並びはシートの見出しに合わせる"""
         head = HEADERS[sheet]
+        if sheet == "候補":
+            record = dict(record, 状態=status_mark(record.get("確認", "")))
         if self.remote:
             self._ensure_sheet(sheet)
             live = self._get(f"{sheet}!1:1")
@@ -133,6 +153,8 @@ class Ledger:
                 head = live[0]
             col = head.index(col_name)
             self._update(f"{sheet}!{chr(65 + col)}{row}", [[str(value)]])
+            if sheet == "候補" and col_name == "確認" and "状態" in head:   # 状態マークもそろえる
+                self._update(f"{sheet}!{chr(65 + head.index('状態'))}{row}", [[status_mark(value)]])
         else:
             col = head.index(col_name)
             r = self.local[sheet][row - 2]
