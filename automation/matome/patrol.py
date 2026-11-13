@@ -523,6 +523,49 @@ class Patrol:
                 self.alert(f"slot_check_{r['_row']}", f"候補シート{r['_row']}行目は機械チェックで止めました（{'、'.join(problems)}）。直して再度「OK」にしてください")
                 continue
             return r, parent, replies
+        return self.pick_stock(area)
+
+    STOCK_GAP_DAYS = 90   # 同じストックを再び出すまでの日数（2026-11-13 先生決定）
+
+    def pick_stock(self, area):
+        """新着の候補が無いときのストック（作り置き）。情報源「ストック」・確認「ストック」（先生OK済み）の行から、
+        いちばん長く出していないものを選ぶ。元ページが消えた・変わったものは出さずに先生の確認へ戻す"""
+        today = self.today
+        picks = []
+        for r in self.ledger.rows("候補"):
+            if r.get("情報源") != "ストック" or norm(r.get("確認", "")) != "ストック":
+                continue
+            typ = r.get("型", "")
+            if (area == "区" and typ != "型2") or (area == "議会" and typ not in ("型1", "型3")):
+                continue
+            m = re.search(r"最終投稿 (\d{4}-\d\d-\d\d)", r.get("備考", ""))
+            last = datetime.date.fromisoformat(m.group(1)) if m else None
+            if last and (today - last).days < self.STOCK_GAP_DAYS:
+                continue
+            picks.append(((last or datetime.date.min), r["_row"], r))
+        picks.sort(key=lambda x: (x[0], x[1]))
+        for _, _, r in picks:
+            url = r.get("URL", "")
+            try:
+                now_sig = hashlib.md5(page_text(fetch(url)).encode()).hexdigest()[:8]
+            except Exception as e:
+                self.ledger.update_cell("候補", r["_row"], "確認", "ストック（要確認：ページが読めない）")
+                self.alert(f"stock_page_{r['_row']}", f"ストック（候補シート{r['_row']}行目）の元ページが読めません（{e}）。確認して、よければ「確認」を「ストック」に戻してください")
+                continue
+            m = re.search(r"内容 ([0-9a-f]{8})", r.get("備考", ""))
+            if m and m.group(1) != now_sig:
+                self.ledger.update_cell("候補", r["_row"], "確認", "ストック（要確認：ページ更新）")
+                self.alert(f"stock_changed_{r['_row']}", f"ストック（候補シート{r['_row']}行目）の元ページが更新されています。文面を確かめ、よければ備考の「内容 …」を消して「確認」を「ストック」に戻してください")
+                continue
+            parent, replies = C.from_cell(r.get("文面案", ""))
+            problems = C.check_post(parent, replies)
+            if problems:
+                self.ledger.update_cell("候補", r["_row"], "確認", "ストック（要修正）")
+                self.alert(f"stock_check_{r['_row']}", f"ストック（候補シート{r['_row']}行目）は機械チェックで止めました（{'、'.join(problems)}）")
+                continue
+            if not m:
+                r["_sig"] = now_sig
+            return r, parent, replies
         return None
 
     def slot_run(self):
@@ -543,7 +586,13 @@ class Patrol:
             if pid.startswith("未投稿"):
                 self.say(f"{start}時の枠：{pid}"); return
             done.append(start)
-            self.ledger.update_cell("候補", r["_row"], "確認", f"投稿済 {fmt_dt(self.now)} {pid}")
+            if r.get("情報源") == "ストック":   # ストックは「ストック」のまま残し、最終投稿日を備考に書く
+                note = re.sub(r"／?最終投稿 \S+ \S+", "", r.get("備考", ""))
+                if r.get("_sig"):
+                    note += f"／内容 {r['_sig']}"
+                self.ledger.update_cell("候補", r["_row"], "備考", (note + f"／最終投稿 {self.today.isoformat()} {pid}").lstrip("／"))
+            else:
+                self.ledger.update_cell("候補", r["_row"], "確認", f"投稿済 {fmt_dt(self.now)} {pid}")
             self.say(f"{start}時の枠で投稿: 候補シート{r['_row']}行目 {r.get('件名', '')}")
             return
 
