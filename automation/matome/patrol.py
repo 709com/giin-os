@@ -596,13 +596,15 @@ class Patrol:
                  f"X鍵={self.x.mode or 'なし'} 台帳={'スプレッドシート' if self.ledger.remote else 'ローカル'}")
         try:
             if self.slots:   # 1日3枠の運用：区の新着と議会を候補にし、枠の時刻に1本ずつ出す（まとめ＝型4は出さない）
-                self.retry_replies()
+                steps = [self.retry_replies]
                 if self.mode != "digest":
-                    self.check_council()
-                    self.check_sokuho()
-                    self.check_rss()
-                self.slot_run()
-                self.watch()
+                    steps += [self.check_council, self.check_sokuho, self.check_rss]
+                for step in steps + [self.slot_run, self.watch]:   # どこかで失敗しても、枠の投稿までは進める
+                    try:
+                        step()
+                    except Exception as e:
+                        self.alert(f"crash_{step.__name__}", f"巡回の「{step.__name__}」でエラー: {e}")
+                        traceback.print_exc()
             elif self.mode == "digest":
                 self.retry_replies(); self.post_digest()
             else:

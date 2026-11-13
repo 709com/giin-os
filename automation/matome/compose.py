@@ -265,12 +265,16 @@ def compose_type2(item, text):
     if not os.environ.get("ANTHROPIC_API_KEY"):
         parent, reply = fallback_type2(item)
         return parent, [reply], ["ANTHROPIC_API_KEY が無いので件名とリンクだけ"]
-    import anthropic
-    client = anthropic.Anthropic()
     prompt = PROMPT_T2.format(title=item["title"], creator=item.get("creator", ""), subject=item.get("subject", ""),
                               url=item["url"], text=text[:7000])
-    msg = client.messages.create(model=os.environ.get("MATOME_MODEL", "claude-sonnet-5-5"),
-                                 max_tokens=1500, messages=[{"role": "user", "content": prompt}])
+    try:
+        import anthropic
+        client = anthropic.Anthropic()
+        msg = client.messages.create(model=os.environ.get("MATOME_MODEL", "claude-sonnet-5-5"),
+                                     max_tokens=1500, messages=[{"role": "user", "content": prompt}])
+    except Exception as e:   # 鍵が無効・通信エラーでも巡回は止めず、件名とリンクだけの形に落とす
+        parent, reply = fallback_type2(item)
+        return parent, [reply], [f"Claude APIが使えない（{type(e).__name__}）"]
     out = "".join(b.text for b in msg.content if b.type == "text")
     m = re.search(r"===親===\s*(.*?)\s*===返信===\s*(.*)", out, re.S)
     parent = norm_block(m.group(1)) if m else ""
