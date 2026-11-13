@@ -568,6 +568,28 @@ class Patrol:
             self.ledger.update_cell("候補", row, "確認", f"投稿済 {fmt_dt(self.now)} {pid}")
 
     # ---------- 見張り ----------
+    def check_claude_key(self):
+        """AnthropicのAPIキーが使えるかを、料金のかからない「モデル一覧」で確かめる（2026-11-13 追加）"""
+        import os, requests
+        key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+        if not key:
+            self.say("Claude鍵：未設定"); self.alert("claude_key", "AnthropicのAPIキー（ANTHROPIC_API_KEY）が設定されていません"); return
+        try:
+            r = requests.get("https://api.anthropic.com/v1/models", headers={"x-api-key": key, "anthropic-version": "2023-06-01"}, timeout=20)
+        except Exception as e:
+            self.say(f"Claude鍵：確認できず（通信エラー {type(e).__name__}）"); return
+        if r.status_code == 200:
+            self.say("Claude鍵：有効")
+            if self.state.get("claude_key_bad"):
+                self.state["claude_key_bad"] = False
+                self.alerts.append("AnthropicのAPIキーが使えるようになりました（区のお知らせの文面づくりが再開します）")
+        elif r.status_code in (401, 403):
+            self.say(f"Claude鍵：無効（{r.status_code}）")
+            self.state["claude_key_bad"] = True
+            self.alert("claude_key", "AnthropicのAPIキーが無効です。console.anthropic.com で新しいキーを発行し、GitHub の Secrets「ANTHROPIC_API_KEY」を入れ替えてください（区のお知らせの文面づくり・LINE週刊コラム・選挙アナリストが止まります）")
+        else:
+            self.say(f"Claude鍵：確認できず（{r.status_code}）")
+
     def watch(self):
         for w in self.x.warnings:
             self.alert("x_token", w)
@@ -599,7 +621,7 @@ class Patrol:
                 steps = [self.retry_replies]
                 if self.mode != "digest":
                     steps += [self.check_council, self.check_sokuho, self.check_rss]
-                for step in steps + [self.slot_run, self.watch]:   # どこかで失敗しても、枠の投稿までは進める
+                for step in [self.check_claude_key] + steps + [self.slot_run, self.watch]:   # どこかで失敗しても、枠の投稿までは進める
                     try:
                         step()
                     except Exception as e:
