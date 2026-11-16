@@ -425,7 +425,7 @@
  },
  "questions_pages": {
   "https://www.city.bunkyo.lg.jp/kugikai/p007926.html": {
-   "published": false
+   "published": true
   }
  },
  "sokuho": [
@@ -487,10 +487,30 @@
    "title": "11月19日（木） 本会議（一般質問）",
    "url": "https://www.city.bunkyo.lg.jp/kugikai/p007926.html",
    "row": 96,
-   "status": "未",
+   "status": "差し替え",
    "post_on": "2026-11-18",
    "expires": "2026-11-19",
    "created": "2026-11-16 01:45"
+  },
+  "型3|questions|https://www.city.bunkyo.lg.jp/kugikai/p007926.html": {
+   "型": "型3",
+   "title": "一般質問要旨（令和8年11月定例議会） の公開",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/p007926.html",
+   "row": 98,
+   "status": "未",
+   "post_on": "2026-11-16",
+   "expires": "2026-11-23",
+   "created": "2026-11-16 10:30"
+  },
+  "型1|questions|2026-11-19": {
+   "型": "型1",
+   "title": "11月19日（木） 本会議（一般質問）",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/p007926.html",
+   "row": 99,
+   "status": "未",
+   "post_on": "2026-11-18",
+   "expires": "2026-11-19",
+   "created": "2026-11-16 10:30"
   }
  },
  "posted": {
@@ -523,7 +543,7 @@
   "claude_key:2026-11-16": "2026-11-16 01:45"
  },
  "last_post_at": "2026-11-15 12:06",
- "last_run": "2026-11-16 07:09",
+ "last_run": "2026-11-16 10:30",
  "last_new_item_at": "2026-11-13 12:06",
  "slots_done": {
   "2026-11-12": [],
