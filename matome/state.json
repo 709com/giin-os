@@ -411,12 +411,12 @@
  },
  "meeting_pages": {
   "https://www.city.bunkyo.lg.jp/b046/kugikai/p000056.html": {
-   "published": false,
-   "sig": "fcb1ea7a58b64520024f31d58802d00c"
+   "published": true,
+   "sig": "4df5e7daeae79f97267f5bbdf9514924"
   },
   "https://www.city.bunkyo.lg.jp/kugikai/p007924.html": {
-   "published": false,
-   "sig": "13842d71af9ebf8fd0799cea259c7a12"
+   "published": true,
+   "sig": "2990e7ba375c83fdc76fb40bc3f4fcd9"
   },
   "https://www.city.bunkyo.lg.jp/kugikai/p007919.html": {
    "published": false,
@@ -553,6 +553,26 @@
    "post_on": "2026-11-17",
    "expires": "2026-11-24",
    "created": "2026-11-17 05:46"
+  },
+  "型3|materials|https://www.city.bunkyo.lg.jp/b046/kugikai/p000056.html|4df5e7da": {
+   "型": "型3",
+   "title": "議会運営委員会（令和8年11月定例議会） の審議内容・資料",
+   "url": "https://www.city.bunkyo.lg.jp/b046/kugikai/p000056.html",
+   "row": 103,
+   "status": "未",
+   "post_on": "2026-11-17",
+   "expires": "2026-11-24",
+   "created": "2026-11-17 12:05"
+  },
+  "型3|materials|https://www.city.bunkyo.lg.jp/kugikai/p007924.html|2990e7ba": {
+   "型": "型3",
+   "title": "全員協議会（令和8年11月定例議会） の審議内容・資料",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/p007924.html",
+   "row": 104,
+   "status": "未",
+   "post_on": "2026-11-17",
+   "expires": "2026-11-24",
+   "created": "2026-11-17 12:05"
   }
  },
  "posted": {
@@ -587,7 +607,7 @@
   "claude_key:2026-11-17": "2026-11-17 05:46"
  },
  "last_post_at": "2026-11-16 12:06",
- "last_run": "2026-11-17 08:22",
+ "last_run": "2026-11-17 12:05",
  "last_new_item_at": "2026-11-17 05:46",
  "slots_done": {
   "2026-11-12": [],
