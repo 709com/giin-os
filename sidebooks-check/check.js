@@ -509,4 +509,15 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error('エラー：' + (e && e.message ? e.message : e)); process.exit(1); });
+// 失敗したときは黙って終わらず、LINEでも知らせる（「新着なし」と「動いていない」を見分けるため）
+main().catch(async (e) => {
+  let msg = String(e && e.message ? e.message : e).split('\n')[0].slice(0, 200);
+  for (const secret of [process.env.SIDEBOOKS_USER, process.env.SIDEBOOKS_PASS, process.env.LINE_CHANNEL_TOKEN]) {
+    if (secret) msg = msg.split(secret).join('＊＊＊');
+  }
+  console.error('エラー：' + msg);
+  if (!NO_LINE) {
+    try { await sendLine('【SideBooks 新着チェック】今日は動きませんでした。\n理由：' + msg + '\nPCの sidebooks-check\\log.txt に詳しい記録があります。'); } catch (e2) {}
+  }
+  process.exit(1);
+});
