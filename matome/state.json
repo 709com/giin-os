@@ -14,9 +14,9 @@
   },
   "https://www.city.bunkyo.lg.jp/b023/p007683.html": {
    "first": "2026-11-10",
-   "last": "2026-11-10",
+   "last": "2026-11-19",
    "title": "令和9年度4月区立幼稚園・認定こども園入園募集",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b014/p003949.html": {
    "first": "2026-11-09",
@@ -146,9 +146,9 @@
   },
   "https://www.city.bunkyo.lg.jp/b020/p007753.html": {
    "first": "2026-10-26",
-   "last": "2026-10-26",
+   "last": "2026-11-17",
    "title": "ケアプランデータ連携システム活用促進事業",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b040/p007694.html": {
    "first": "2026-10-26",
@@ -423,8 +423,8 @@
    "sig": "feda21f775f7364ef53dc08aca1e7e85"
   },
   "https://www.city.bunkyo.lg.jp/kugikai/bouchou/p000007.html": {
-   "published": false,
-   "sig": "f11c6c1a22d1c81633260a6fa8af1745"
+   "published": true,
+   "sig": "5385611705770b04b608a86c9cd480be"
   },
   "https://www.city.bunkyo.lg.jp/kugikai/p007419/p000007.html": {
    "published": false,
@@ -597,6 +597,16 @@
    "post_on": "2026-11-19",
    "expires": "2026-11-20",
    "created": "2026-11-17 13:16"
+  },
+  "型3|materials|https://www.city.bunkyo.lg.jp/kugikai/bouchou/p000007.html|53856117": {
+   "型": "型3",
+   "title": "子ども・子育て支援調査特別委員会\n（令和8年11月定例議会） の審議内容・資料",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/bouchou/p000007.html",
+   "row": 107,
+   "status": "未",
+   "post_on": "2026-11-18",
+   "expires": "2026-11-25",
+   "created": "2026-11-18 20:06"
   }
  },
  "posted": {
@@ -619,7 +629,18 @@
   "2026-11-15": [],
   "2026-11-16": [],
   "2026-11-17": [],
-  "2026-11-18": []
+  "2026-11-18": [
+   {
+    "title": "令和9年度4月区立幼稚園・認定こども園入園募集",
+    "creator": "こども未来部幼児保育課",
+    "url": "https://www.city.bunkyo.lg.jp/b023/p007683.html"
+   },
+   {
+    "title": "ケアプランデータ連携システム活用促進事業",
+    "creator": "福祉部介護保険課",
+    "url": "https://www.city.bunkyo.lg.jp/b020/p007753.html"
+   }
+  ]
  },
  "pending_replies": [],
  "alerts": {
@@ -631,9 +652,9 @@
   "claude_key:2026-11-16": "2026-11-16 01:45",
   "claude_key:2026-11-17": "2026-11-17 05:46"
  },
- "last_post_at": "2026-11-18 12:06",
- "last_run": "2026-11-18 13:00",
- "last_new_item_at": "2026-11-17 05:46",
+ "last_post_at": "2026-11-18 20:06",
+ "last_run": "2026-11-18 20:06",
+ "last_new_item_at": "2026-11-18 20:06",
  "slots_done": {
   "2026-11-12": [],
   "2026-11-13": [],
@@ -655,7 +676,8 @@
   ],
   "2026-11-18": [
    7,
-   12
+   12,
+   20
   ]
  },
  "claude_key_bad": false
