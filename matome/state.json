@@ -20,9 +20,9 @@
   },
   "https://www.city.bunkyo.lg.jp/b014/p003949.html": {
    "first": "2026-11-09",
-   "last": "2026-11-09",
+   "last": "2026-11-19",
    "title": "文京菊まつり",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b039/p001003.html": {
    "first": "2026-11-09",
@@ -329,6 +329,12 @@
    "last": "2026-11-17",
    "title": "令和8年度文京区職員（栄養士・2類）募集案内",
    "count": 1
+  },
+  "https://www.city.bunkyo.lg.jp/b039/p007527.html": {
+   "first": "2026-11-19",
+   "last": "2026-11-19",
+   "title": "粗大ごみインターネット申込サービスおよびチャットサポートサービス（一部）利用停止のお知らせ",
+   "count": 1
   }
  },
  "council_index": {
@@ -621,6 +627,16 @@
    "post_on": "2026-11-19",
    "expires": "2026-11-26",
    "created": "2026-11-19 12:06"
+  },
+  "型2|https://www.city.bunkyo.lg.jp/b039/p007527.html|2026-11-19": {
+   "型": "型2",
+   "title": "粗大ごみインターネット申込サービスおよびチャットサポートサービス（一部）利用停止のお知らせ",
+   "url": "https://www.city.bunkyo.lg.jp/b039/p007527.html",
+   "row": 112,
+   "status": "未",
+   "post_on": "2026-11-19",
+   "expires": "2026-11-26",
+   "created": "2026-11-19 20:06"
   }
  },
  "posted": {
@@ -655,7 +671,13 @@
     "url": "https://www.city.bunkyo.lg.jp/b020/p007753.html"
    }
   ],
-  "2026-11-19": []
+  "2026-11-19": [
+   {
+    "title": "文京菊まつり",
+    "creator": "アカデミー推進部アカデミー推進課",
+    "url": "https://www.city.bunkyo.lg.jp/b014/p003949.html"
+   }
+  ]
  },
  "pending_replies": [],
  "alerts": {
@@ -668,9 +690,9 @@
   "claude_key:2026-11-17": "2026-11-17 05:46",
   "stock_changed_64:2026-11-19": "2026-11-19 12:06"
  },
- "last_post_at": "2026-11-19 12:06",
- "last_run": "2026-11-19 12:57",
- "last_new_item_at": "2026-11-18 20:06",
+ "last_post_at": "2026-11-19 20:06",
+ "last_run": "2026-11-19 20:06",
+ "last_new_item_at": "2026-11-19 20:06",
  "slots_done": {
   "2026-11-12": [],
   "2026-11-13": [],
@@ -697,7 +719,8 @@
   ],
   "2026-11-19": [
    7,
-   12
+   12,
+   20
   ]
  },
  "claude_key_bad": false
