@@ -41,6 +41,7 @@ PCのClaude Codeに「sidebooks-check の準備と動作確認をして」と頼
    git clone -b claude/beautiful-euler-5pmcfi https://github.com/709com/giin-os.git
    cd giin-os\sidebooks-check
    npm install
+   set PLAYWRIGHT_BROWSERS_PATH=0
    npx playwright install chromium
    ```
    （Node.js がなければ https://nodejs.org/ から「LTS」版を入れます）
