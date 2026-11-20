@@ -345,9 +345,13 @@ async function downloadOne(page, item, dir) {
     await b.locator('.openDetail').click({ force: true });
     await sleep(WAIT_MS);
     const btn = page.locator('a, button, input[type="button"]').filter({ hasText: /ダウンロード/ }).filter({ hasNotText: /一括|削除|移動|アップロード/ });
-    const visible = [];
-    const c = await btn.count();
-    for (let j = 0; j < c; j++) if (await btn.nth(j).isVisible().catch(() => false)) visible.push(btn.nth(j));
+    // 詳細欄が開ききるまで、ボタンが出るのを最大15秒待つ（2026-11-20：待ち不足で42件取りこぼしたため）
+    let visible = [];
+    for (let t = 0; t < 30 && !visible.length; t++) {
+      if (t) await sleep(500);
+      const c = await btn.count();
+      for (let j = 0; j < c; j++) if (await btn.nth(j).isVisible().catch(() => false)) visible.push(btn.nth(j));
+    }
     if (!visible.length) return { ok: false, why: 'ダウンロードボタンが見つかりません（権限がない可能性）' };
     try {
       const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 60000 }), visible[0].click()]);
@@ -461,10 +465,14 @@ async function main() {
       const seen = new Set(folderList.map((f) => f.seq));
       mergedFolders = [...folderList, ...(prev.folders || []).filter((f) => !seen.has(f.seq))];
     }
-    const merged = { ...snap, folder_count: mergedFolders.length, file_count: Object.keys(mergedFiles).length, folders: mergedFolders, files: mergedFiles };
+    // 保存できなかった資料は「やり直し待ち」に残し、次の回にもう一度保存を試みる（5回まで）
+    const pending = { ...(prev.pending_downloads || {}) };
+    for (const k of Object.keys(pending)) if (!mergedFiles[k]) delete pending[k];
+    const merged = { ...snap, folder_count: mergedFolders.length, file_count: Object.keys(mergedFiles).length, folders: mergedFolders, files: mergedFiles, pending_downloads: pending };
     fs.writeFileSync(SNAPSHOT, JSON.stringify(merged, null, 1));
 
-    if (!added.length && !changed.length) {
+    const retryKeys = NO_DOWNLOAD ? [] : Object.keys(pending).filter((k) => !added.includes(k));
+    if (!added.length && !changed.length && !retryKeys.length) {
       console.log('新着なし');
       warnings.forEach((w) => log('注意：' + w));
       return;
@@ -487,18 +495,30 @@ async function main() {
     }
 
     let dlNote = '';
-    if (!NO_DOWNLOAD && added.length) {
+    if (!NO_DOWNLOAD && (added.length || retryKeys.length)) {
       const day = started.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
       const dir = path.join(saveRoot(), day);
-      let ok = 0; const ng = [];
-      for (const k of added) {
-        const r = await downloadOne(page, files[k], dir);
-        if (r.ok) ok++; else ng.push(`${files[k].name}：${r.why}`);
+      let ok = 0; let retried = 0; const ng = []; const gaveUp = [];
+      for (const k of [...added, ...retryKeys]) {
+        const item = mergedFiles[k];
+        const r = await downloadOne(page, item, dir);
+        if (retryKeys.includes(k) && r.ok) retried++;
+        if (r.ok) { ok++; delete pending[k]; } else {
+          pending[k] = (pending[k] || 0) + 1;
+          if (pending[k] >= 5) { delete pending[k]; gaveUp.push(`${item.name}：${r.why}`); }
+          else if (added.includes(k)) ng.push(`${item.name}：${r.why}`);
+        }
         await sleep(WAIT_MS);
       }
-      dlNote = `\n保存：${ok}件（${dir}）` + (ng.length ? `\n保存できなかったもの：\n${ng.join('\n')}` : '');
+      fs.writeFileSync(SNAPSHOT, JSON.stringify({ ...merged, pending_downloads: pending }, null, 1));
+      dlNote = `\n保存：${ok}件（${dir}）` + (retried ? `（うち前回までに保存できなかった分 ${retried}件）` : '')
+        + (ng.length ? `\n保存できなかったもの（次の回にやり直します）：\n${ng.join('\n')}` : '')
+        + (gaveUp.length ? `\n5回試しても保存できなかったもの（SideBooksで直接見てください）：\n${gaveUp.join('\n')}` : '');
       console.log(dlNote.trim());
     }
+
+    // 新着も更新もなく、やり直しの保存だけだった日は、LINEは送らない（記録だけ）
+    if (!added.length && !changed.length) { warnings.forEach((w) => log('注意：' + w)); return; }
 
     if (!NO_LINE) {
       await sendLine(`【SideBooks 新着】${added.length}件` + (changed.length ? `・更新${changed.length}件` : '') + '\n' + lines.join('\n') + dlNote);
