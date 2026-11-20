@@ -367,6 +367,49 @@ async function downloadOne(page, item, dir) {
   return { ok: false, why: 'ファイルが見つかりません' };
 }
 
+// ---------- LINEの文面（2026-11-20 先生「見にくい」→ フォルダごとにまとめる） ----------
+// 長い住所を1行ずつ並べず、いちばん上のフォルダ→その中の場所→資料名の順にまとめる。
+// 同じ場所に5件以上あるときは3件だけ書いて「ほか○件」。詳しい一覧は log.txt に残る。
+const TOP_ORDER = [/定例議会|臨時会/, /^03/, /^04/, /^02/, /^01/, /^06/, /^07/, /^05/, /^08/, /^10/, /^11/, /^12/, /^09/];
+const topRank = (t) => { const i = TOP_ORDER.findIndex((re) => re.test(t)); return i < 0 ? 99 : i; };
+const shortTop = (t) => t.replace(/^\d+[\s_]*/, '');
+
+function formatLineMessage({ added, changed, missed, files, dl, started }) {
+  const md = started.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric' });
+  const head = `【SideBooks 新着】${md}　${added.length}件` + (changed.length ? `（更新${changed.length}件）` : '');
+  const groups = {};
+  const put = (k, mark) => {
+    const f = files[k];
+    const segs = (f.folder || '').split(' / ').filter(Boolean);
+    const top = segs[0] || 'ホーム';
+    const sub = segs.slice(1, 3).join('／'); // 細かく分かれすぎないよう、上から3階層目までで区切る
+    ((groups[top] ||= {})[sub] ||= []).push(f.name + mark);
+  };
+  added.forEach((k) => put(k, ''));
+  changed.forEach((k) => put(k, '（更新）'));
+
+  const out = [head];
+  for (const top of Object.keys(groups).sort((a, b) => topRank(a) - topRank(b) || a.localeCompare(b, 'ja'))) {
+    const subs = groups[top];
+    const n = Object.values(subs).reduce((s, a) => s + a.length, 0);
+    out.push('', `◆${shortTop(top)}（${n}件）`);
+    for (const sub of Object.keys(subs).sort((a, b) => a.localeCompare(b, 'ja'))) {
+      const names = subs[sub];
+      if (sub) out.push(`▶${sub}`);
+      const show = names.length >= 5 ? names.slice(0, 3) : names;
+      show.forEach((x) => out.push(`・${x}`));
+      if (show.length < names.length) out.push(`　ほか${names.length - show.length}件`);
+    }
+  }
+  if (missed && missed.length) out.push('', `※新着ファイル画面に出ていなかったもの：${missed.length}件（PCの log.txt に一覧）`);
+  if (dl) {
+    out.push('', `💾 保存 ${dl.ok}件 → マイドライブ「SideBooks新着」の ${dl.day}`);
+    if (dl.ng) out.push(`　保存できなかったもの ${dl.ng}件は、次の回にやり直します`);
+    if (dl.gaveUp.length) out.push(`　5回試しても保存できなかったもの（SideBooksで直接）：`, ...dl.gaveUp.map((x) => `　・${x.split('：')[0]}`));
+  }
+  return out.join('\n');
+}
+
 // ---------- LINE ----------
 async function sendLine(text) {
   const token = process.env.LINE_CHANNEL_TOKEN;
@@ -484,9 +527,10 @@ async function main() {
     lines.forEach((l) => console.log(l));
 
     // 確かめたいこと：フォルダには入ったのに新着ファイル画面に出なかった資料（閲覧者を限定した資料など）
+    let missed = [];
     if (newSeqs) {
       const tenDaysAgo = new Date(Date.now() - 10 * 86400000).toLocaleString('sv-SE', { timeZone: 'Asia/Tokyo' }).replace(/-/g, '/');
-      const missed = added.filter((k) => files[k].seq && !newSeqs.has(files[k].seq) && (files[k].updated || '') >= tenDaysAgo);
+      missed = added.filter((k) => files[k].seq && !newSeqs.has(files[k].seq) && (files[k].updated || '') >= tenDaysAgo);
       if (missed.length) {
         const note = '（新着ファイル画面には出ていなかったもの）\n' + missed.join('\n');
         console.log(note);
@@ -495,6 +539,7 @@ async function main() {
     }
 
     let dlNote = '';
+    let dlSummary = null;
     if (!NO_DOWNLOAD && (added.length || retryKeys.length)) {
       const day = started.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
       const dir = path.join(saveRoot(), day);
@@ -515,13 +560,14 @@ async function main() {
         + (ng.length ? `\n保存できなかったもの（次の回にやり直します）：\n${ng.join('\n')}` : '')
         + (gaveUp.length ? `\n5回試しても保存できなかったもの（SideBooksで直接見てください）：\n${gaveUp.join('\n')}` : '');
       console.log(dlNote.trim());
+      dlSummary = { ok, ng: ng.length, gaveUp, day };
     }
 
     // 新着も更新もなく、やり直しの保存だけだった日は、LINEは送らない（記録だけ）
     if (!added.length && !changed.length) { warnings.forEach((w) => log('注意：' + w)); return; }
 
     if (!NO_LINE) {
-      await sendLine(`【SideBooks 新着】${added.length}件` + (changed.length ? `・更新${changed.length}件` : '') + '\n' + lines.join('\n') + dlNote);
+      await sendLine(formatLineMessage({ added, changed, missed, files, dl: dlSummary, started }));
     }
     warnings.forEach((w) => log('注意：' + w));
   } finally {
