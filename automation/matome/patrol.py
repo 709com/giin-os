@@ -833,6 +833,8 @@ def gate_check(rows):
         ok, why, d = G.review(parent, replies, r.get("URL", ""), p.today)
         ng += 0 if ok else 1
         print(f"{r['_row']}行目 {'OK' if ok else 'NG'}　{r.get('件名', '')}" + ("" if ok else f"\n　理由：{why}"))
+        if d.get("raw"):
+            print("　点検の答え（先頭）：" + d["raw"].replace("\n", " ")[:200])
         for k in ("読みやすさ", "法的", "炎上", "古さ"):
             if d.get(k) and d.get(k) != "問題なし":
                 print(f"　{k}：{d[k]}")

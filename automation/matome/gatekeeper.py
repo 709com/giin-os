@@ -43,7 +43,7 @@ PROMPT = """あなたは、文京区の区議会の会派が運営するX（旧T
 - 4つのどれかに、はっきりした問題が1つでもあれば「NG」。迷うほど危ういものも「NG」。
 - 問題がなければ「OK」。好みの問題（言い回しを少し変えたい程度）は「OK」のままでよい。
 
-# 出力（このJSONだけ。前置きや説明は書かない）
+# 出力（このJSONだけ。前置きや説明、```などの囲みは書かない。各項目は40字以内。文中に " を使わない）
 {{"判定": "OK または NG", "読みやすさ": "問題なし または 問題点を短く", "法的": "問題なし または 問題点を短く",
  "炎上": "問題なし または 問題点を短く", "古さ": "問題なし または 問題点を短く", "理由": "NGのときだけ、止める理由を1文で"}}
 """
@@ -77,7 +77,7 @@ def review(parent, replies, url, today):
     try:
         import anthropic
         client = anthropic.Anthropic()
-        msg = client.messages.create(model=MODEL, max_tokens=800, messages=[{"role": "user", "content": prompt}])
+        msg = client.messages.create(model=MODEL, max_tokens=1500, messages=[{"role": "user", "content": prompt}])
         out = "".join(b.text for b in msg.content if b.type == "text")
     except Exception as e:
         return False, f"点検できない（Claude APIの呼び出しに失敗：{type(e).__name__}）", {}
@@ -86,6 +86,12 @@ def review(parent, replies, url, today):
         d = json.loads(m.group(0)) if m else None
     except Exception:
         d = None
+    if not isinstance(d, dict):   # JSONが崩れていても、判定と各項目は拾う
+        d = {}
+        for k in ("判定", "読みやすさ", "法的", "炎上", "古さ", "理由"):
+            mm = re.search(r'"' + k + r'"\s*:\s*"(.*?)"\s*[,}]', out, re.S)
+            if mm:
+                d[k] = mm.group(1).strip()
     if not isinstance(d, dict) or str(d.get("判定", "")).strip().upper() not in ("OK", "NG"):
         return False, "点検できない（点検の答えが読めない）", {"raw": out[:300]}
     if str(d["判定"]).strip().upper() == "OK":
