@@ -17,6 +17,7 @@ from . import sources as S
 from . import compose as C
 from .ledger import Ledger
 from .xapi import XClient
+from . import gatekeeper as G
 
 ACCOUNT = "@bunkyo_matome"
 KUBUN = "政務活動費（会派）"
@@ -59,7 +60,9 @@ class Patrol:
         if m and self.today < datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3))):
             self.dry = True   # 本番開始日より前は試運転と同じ（投稿しない）
         self.slots = self.settings.get("運用", "") == "3枠"   # 1日3枠（7時 自動／12時 区の施策 OK後／20時 議会 OK後）
-        self.state.setdefault("slots_done", {})
+        self.state.setdefault("slots_done", {}); self.state.setdefault("gate_stops", {})
+        import os
+        os.environ["MATOME_GATE"] = "オフ" if self.settings.get("ゲートキーパー", "オン") == "オフ" else "オン"
         self.x = XClient(dry_run=self.dry)
         if not self.dry and not self.x.can_post:
             self.dry = True
@@ -489,7 +492,7 @@ class Patrol:
         if status == "未":
             self.notices.append(f"■区の施策（12時の枠）{it['title']}\n{C.to_cell(parent, replies)}\n→ 候補シート{row}行目の「確認」に OK と書くと12時の枠で投稿します")
 
-    def pick_slot(self, how, area):
+    def pick_slot(self, how, area, exclude=()):
         """候補シートから、この枠で出す1行を選ぶ（なければ None）"""
         today = self.today.isoformat()
         picks = []
@@ -516,6 +519,8 @@ class Patrol:
             picks.append((expires, -r["_row"] if how == "自動" else r["_row"], r))
         picks.sort(key=lambda x: (x[0], x[1]))
         for _, _, r in picks:
+            if r["_row"] in exclude:
+                continue
             parent, replies = C.from_cell(r.get("文面案", ""))
             problems = C.check_post(parent, replies)
             if problems:
@@ -523,11 +528,11 @@ class Patrol:
                 self.alert(f"slot_check_{r['_row']}", f"候補シート{r['_row']}行目は機械チェックで止めました（{'、'.join(problems)}）。直して再度「OK」にしてください")
                 continue
             return r, parent, replies
-        return self.pick_stock(area)
+        return self.pick_stock(area, exclude)
 
     STOCK_GAP_DAYS = 90   # 同じストックを再び出すまでの日数（2026-11-13 先生決定）
 
-    def pick_stock(self, area):
+    def pick_stock(self, area, exclude=()):
         """新着の候補が無いときのストック（作り置き）。情報源「ストック」・確認「ストック」（先生OK済み）の行から、
         いちばん長く出していないものを選ぶ。元ページが消えた・変わったものは出さずに先生の確認へ戻す"""
         today = self.today
@@ -545,6 +550,8 @@ class Patrol:
             picks.append(((last or datetime.date.min), r["_row"], r))
         picks.sort(key=lambda x: (x[0], x[1]))
         for _, _, r in picks:
+            if r["_row"] in exclude:
+                continue
             url = r.get("URL", "")
             try:
                 now_sig = hashlib.md5(page_text(fetch(url)).encode()).hexdigest()[:8]
@@ -568,6 +575,33 @@ class Patrol:
             return r, parent, replies
         return None
 
+    GATE_TRIES = 4   # 1つの枠で点検にかける候補の数の上限
+
+    def gate_stop(self, r, why):
+        """ゲートキーパーで止めた行を「要確認」にし、夜のまとめ通知に積む"""
+        row = r["_row"]
+        stock = r.get("情報源") == "ストック"
+        self.ledger.update_cell("候補", row, "確認", "ストック（要確認：ゲートキーパー）" if stock else "要確認（ゲートキーパー）")
+        note = (r.get("備考", "") + f"／ゲートキーパー {fmt_dt(self.now)}：{why}").lstrip("／")
+        self.ledger.update_cell("候補", row, "備考", note)
+        self.state["gate_stops"].setdefault(self.today.isoformat(), []).append(
+            {"row": row, "title": r.get("件名", ""), "why": why, "sent": False})
+        self.say(f"ゲートキーパーで取り下げ: 候補シート{row}行目 {r.get('件名', '')}（{why}）")
+
+    def gate_summary(self):
+        """止めた投稿の知らせは、夜（20時以降）にまとめて1通（2026-11-22 先生の指示）"""
+        if self.now.hour < 20:
+            return
+        todo = [s for s in self.state["gate_stops"].get(self.today.isoformat(), []) if not s.get("sent")]
+        if not todo:
+            return
+        msg = "【文京区まとめ ゲートキーパー】今日、投稿前の点検で取り下げたもの\n" + "\n".join(
+            f"・候補シート{s['row']}行目 {s['title']}\n　理由：{s['why']}" for s in todo)
+        msg += "\n\n直してよければ、候補シートの「確認」を OK（ストックは「ストック」）に戻してください。"
+        line(msg)
+        for s in todo:
+            s["sent"] = True
+
     def slot_run(self):
         """今の時刻の枠で、まだ出していなければ1本だけ出す（GitHubの遅れに備えて、次の枠の時刻までは待つ）"""
         done = self.state["slots_done"].setdefault(self.today.isoformat(), [])
@@ -577,9 +611,20 @@ class Patrol:
             ok, why = self.may_post_now()
             if not ok:
                 self.say(f"{start}時の枠：投稿しない（{why}）"); return
-            got = self.pick_slot(how, area)
+            got, tried = None, set()
+            for _ in range(self.GATE_TRIES):   # ゲートキーパーで止めたら、同じ枠の次の候補（なければ次のストック）に差し替える
+                got = self.pick_slot(how, area, tried)
+                if not got:
+                    break
+                r, parent, replies = got
+                ok, why, _ = G.review(parent, replies, r.get("URL", ""), self.today)
+                if ok:
+                    break
+                tried.add(r["_row"]); got = None
+                self.gate_stop(r, why)
             if not got:
-                self.say(f"{start}時の枠：出せる候補なし（{'自動待ち' if how == '自動' else '先生のOK'}の候補がありません）"); return
+                self.say(f"{start}時の枠：出せる候補なし（{'自動待ち' if how == '自動' else '先生のOK'}の候補がありません"
+                         + (f"。ゲートキーパーで{len(tried)}本止めました" if tried else "") + "）"); return
             r, parent, replies = got
             pid = self.post_thread(parent, replies, {"型": r.get("型", ""), "url": r.get("URL", ""),
                                                       "確認": "自動" if how == "自動" else "先生OK"})
@@ -652,7 +697,7 @@ class Patrol:
     def prune(self):
         """古い記録を整理（state.json を太らせない）"""
         old = (self.today - datetime.timedelta(days=60)).isoformat()
-        for k in ("posted", "digest_pool", "slots_done"):
+        for k in ("posted", "digest_pool", "slots_done", "gate_stops"):
             self.state[k] = {d: v for d, v in self.state[k].items() if d >= old}
         self.state["alerts"] = {k: v for k, v in self.state["alerts"].items() if k.rsplit(":", 1)[-1] >= old}
         self.state["candidates"] = {k: v for k, v in self.state["candidates"].items() if v.get("expires", "9999") >= old}
@@ -670,7 +715,7 @@ class Patrol:
                 steps = [self.retry_replies]
                 if self.mode != "digest":
                     steps += [self.check_council, self.check_sokuho, self.check_rss]
-                for step in [self.check_claude_key] + steps + [self.slot_run, self.watch]:   # どこかで失敗しても、枠の投稿までは進める
+                for step in [self.check_claude_key] + steps + [self.slot_run, self.gate_summary, self.watch]:   # どこかで失敗しても、枠の投稿までは進める
                     try:
                         step()
                     except Exception as e:
@@ -770,10 +815,37 @@ def post_row(row):
     return 0
 
 
+def gate_check(rows):
+    """ゲートキーパーの点検だけをする（投稿しない・シートも変えない）。rows は "101" や "61-70,115" の形"""
+    p = Patrol("gatecheck")
+    want = set()
+    for part in str(rows).split(","):
+        part = part.strip()
+        if "-" in part:
+            a, b = part.split("-"); want |= set(range(int(a), int(b) + 1))
+        elif part:
+            want.add(int(part))
+    ng = 0
+    for r in p.ledger.rows("候補"):
+        if r["_row"] not in want or not r.get("文面案"):
+            continue
+        parent, replies = C.from_cell(r["文面案"])
+        ok, why, d = G.review(parent, replies, r.get("URL", ""), p.today)
+        ng += 0 if ok else 1
+        print(f"{r['_row']}行目 {'OK' if ok else 'NG'}　{r.get('件名', '')}" + ("" if ok else f"\n　理由：{why}"))
+        for k in ("読みやすさ", "法的", "炎上", "古さ"):
+            if d.get(k) and d.get(k) != "問題なし":
+                print(f"　{k}：{d[k]}")
+    print(f"結果: 点検 {len(want)}行のうち NG {ng}本（投稿はしていません）")
+    return 0
+
+
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "patrol"
     if mode == "check":
         sys.exit(check_keys())
+    if mode == "gatecheck":
+        sys.exit(gate_check(sys.argv[2] if len(sys.argv) > 2 else ""))
     if mode == "post":
         sys.exit(post_row(int(sys.argv[2])))
     Patrol(mode).run()
