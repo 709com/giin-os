@@ -453,6 +453,10 @@
   "https://www.city.bunkyo.lg.jp/kugikai/p007923.html": {
    "published": false,
    "sig": "12e9d88bb9685d9cf5e902e6f6fedea8"
+  },
+  "https://www.city.bunkyo.lg.jp/kugikai/p007922.html": {
+   "published": false,
+   "sig": "c122bec99de5a4b4c72ca336b3248d70"
   }
  },
  "questions_pages": {
@@ -673,6 +677,16 @@
    "post_on": "2026-11-24",
    "expires": "2026-11-25",
    "created": "2026-11-22 04:37"
+  },
+  "型1|meeting|2026-11-26|自治制度・地域振興調査特別委員会": {
+   "型": "型1",
+   "title": "11月26日（木） 自治制度・地域振興調査特別委員会",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/p007419/p000007.html",
+   "row": 156,
+   "status": "未",
+   "post_on": "2026-11-25",
+   "expires": "2026-11-26",
+   "created": "2026-11-23 03:11"
   }
  },
  "posted": {
@@ -716,7 +730,8 @@
   ],
   "2026-11-20": [],
   "2026-11-21": [],
-  "2026-11-22": []
+  "2026-11-22": [],
+  "2026-11-23": []
  },
  "pending_replies": [],
  "alerts": {
@@ -731,7 +746,7 @@
   "stock_changed_69:2026-11-21": "2026-11-21 12:06"
  },
  "last_post_at": "2026-11-22 20:06",
- "last_run": "2026-11-22 20:06",
+ "last_run": "2026-11-23 03:11",
  "last_new_item_at": "2026-11-20 06:09",
  "slots_done": {
   "2026-11-12": [],
@@ -776,7 +791,8 @@
    7,
    12,
    20
-  ]
+  ],
+  "2026-11-23": []
  },
  "claude_key_bad": false
 }
