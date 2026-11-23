@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "patrol（通常の巡回）／digest（23時台のまとめだけ）／check（鍵の確認だけ。投稿しない）／post（row の1本だけ投稿）"
+        description: "patrol（通常の巡回）／digest（23時台のまとめだけ）／check（鍵の確認だけ。投稿しない）／post（row の1本だけ投稿）／gatecheck（row の行をゲートキーパーで点検するだけ。例 61-70,115）"
         default: "patrol"
       row:
         description: "mode が post のときだけ：投稿する候補シートの行番号（試運転でもその1本だけ投稿する）"
