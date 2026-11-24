@@ -44,15 +44,15 @@
   },
   "https://www.city.bunkyo.lg.jp/b022/p001687.html": {
    "first": "2026-11-06",
-   "last": "2026-11-06",
+   "last": "2026-11-25",
    "title": "ベビーシッター利用料助成事業",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b022/p001689.html": {
    "first": "2026-11-06",
-   "last": "2026-11-06",
+   "last": "2026-11-25",
    "title": "ふたごちゃん・みつごちゃん家事・育児サポート利用料助成制度",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b003/p008273.html": {
    "first": "2026-11-06",
@@ -752,6 +752,18 @@
     "creator": "アカデミー推進部アカデミー推進課",
     "url": "https://www.city.bunkyo.lg.jp/b014/p003949.html"
    }
+  ],
+  "2026-11-25": [
+   {
+    "title": "ベビーシッター利用料助成事業",
+    "creator": "こども未来部こども若者支援課",
+    "url": "https://www.city.bunkyo.lg.jp/b022/p001687.html"
+   },
+   {
+    "title": "ふたごちゃん・みつごちゃん家事・育児サポート利用料助成制度",
+    "creator": "こども未来部こども若者支援課",
+    "url": "https://www.city.bunkyo.lg.jp/b022/p001689.html"
+   }
   ]
  },
  "pending_replies": [],
@@ -767,8 +779,8 @@
   "stock_changed_69:2026-11-21": "2026-11-21 12:06"
  },
  "last_post_at": "2026-11-24 20:07",
- "last_run": "2026-11-24 20:07",
- "last_new_item_at": "2026-11-24 15:42",
+ "last_run": "2026-11-25 03:36",
+ "last_new_item_at": "2026-11-25 03:36",
  "slots_done": {
   "2026-11-12": [],
   "2026-11-13": [],
@@ -822,7 +834,8 @@
    7,
    12,
    20
-  ]
+  ],
+  "2026-11-25": []
  },
  "claude_key_bad": false,
  "gate_stops": {}
