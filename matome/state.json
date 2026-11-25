@@ -2,9 +2,9 @@
  "rss_seen": {
   "https://www.city.bunkyo.lg.jp/b018/p003469.html": {
    "first": "2026-11-10",
-   "last": "2026-11-10",
+   "last": "2026-11-25",
    "title": "共生のための文京地域支援フォーラム",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b013/koseki_furigana.html": {
    "first": "2026-11-10",
@@ -788,6 +788,11 @@
     "title": "文京区、千代田区、中央区、台東区連携イベント",
     "creator": "福祉部生活福祉課",
     "url": "https://www.city.bunkyo.lg.jp/b019/p003139.html"
+   },
+   {
+    "title": "共生のための文京地域支援フォーラム",
+    "creator": "福祉部障害福祉課",
+    "url": "https://www.city.bunkyo.lg.jp/b018/p003469.html"
    }
   ]
  },
@@ -801,11 +806,12 @@
   "claude_key:2026-11-16": "2026-11-16 01:45",
   "claude_key:2026-11-17": "2026-11-17 05:46",
   "stock_changed_64:2026-11-19": "2026-11-19 12:06",
-  "stock_changed_69:2026-11-21": "2026-11-21 12:06"
+  "stock_changed_69:2026-11-21": "2026-11-21 12:06",
+  "stock_changed_85:2026-11-25": "2026-11-25 20:06"
  },
- "last_post_at": "2026-11-25 12:06",
- "last_run": "2026-11-25 14:12",
- "last_new_item_at": "2026-11-25 13:43",
+ "last_post_at": "2026-11-25 20:06",
+ "last_run": "2026-11-25 20:06",
+ "last_new_item_at": "2026-11-25 20:06",
  "slots_done": {
   "2026-11-12": [],
   "2026-11-13": [],
@@ -862,7 +868,8 @@
   ],
   "2026-11-25": [
    7,
-   12
+   12,
+   20
   ]
  },
  "claude_key_bad": false,
