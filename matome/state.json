@@ -440,7 +440,7 @@
   },
   "https://www.city.bunkyo.lg.jp/kugikai/p007419/p000007.html": {
    "published": true,
-   "sig": "0af4db4b051da3ecf6c5edbc5166597b"
+   "sig": "20f0d77660c329fa0bbfdd7bbe27181f"
   },
   "https://www.city.bunkyo.lg.jp/kugikai/p007925.html": {
    "published": true,
@@ -451,8 +451,8 @@
    "sig": "85ee250597b2d419adbdafd0181963f5"
   },
   "https://www.city.bunkyo.lg.jp/kugikai/p007923.html": {
-   "published": false,
-   "sig": "12e9d88bb9685d9cf5e902e6f6fedea8"
+   "published": true,
+   "sig": "24e247ff808a491ef75cfdeda269f76c"
   },
   "https://www.city.bunkyo.lg.jp/kugikai/p007922.html": {
    "published": false,
@@ -721,6 +721,26 @@
    "post_on": "2026-11-25",
    "expires": "2026-12-02",
    "created": "2026-11-25 12:06"
+  },
+  "型3|materials|https://www.city.bunkyo.lg.jp/kugikai/p007419/p000007.html|20f0d776": {
+   "型": "型3",
+   "title": "自治制度・地域振興調査特別委員会\n（令和8年11月定例議会） の審議内容・資料",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/p007419/p000007.html",
+   "row": 165,
+   "status": "未",
+   "post_on": "2026-11-26",
+   "expires": "2026-12-03",
+   "created": "2026-11-26 12:06"
+  },
+  "型3|materials|https://www.city.bunkyo.lg.jp/kugikai/p007923.html|24e247ff": {
+   "型": "型3",
+   "title": "文教委員会（令和8年11月定例議会） の審議内容・資料",
+   "url": "https://www.city.bunkyo.lg.jp/kugikai/p007923.html",
+   "row": 166,
+   "status": "未",
+   "post_on": "2026-11-26",
+   "expires": "2026-12-03",
+   "created": "2026-11-26 12:06"
   }
  },
  "posted": {
@@ -810,8 +830,8 @@
   "stock_changed_69:2026-11-21": "2026-11-21 12:06",
   "stock_changed_85:2026-11-25": "2026-11-25 20:06"
  },
- "last_post_at": "2026-11-26 07:06",
- "last_run": "2026-11-26 08:04",
+ "last_post_at": "2026-11-26 12:06",
+ "last_run": "2026-11-26 12:06",
  "last_new_item_at": "2026-11-25 20:06",
  "slots_done": {
   "2026-11-12": [],
@@ -873,9 +893,20 @@
    20
   ],
   "2026-11-26": [
-   7
+   7,
+   12
   ]
  },
  "claude_key_bad": false,
- "gate_stops": {}
+ "gate_stops": {
+  "2026-11-26": [
+   {
+    "row": 113,
+    "title": "令和9年4月1日採用・文京区会計年度任用職員（事務）募集",
+    "why": "返信の勤務時間が「逑29時間」と誤字で、週29時間と読めず誤解を招くため。",
+    "sent": false
+   }
+  ]
+ },
+ "unconfirmed_posts": {}
 }
