@@ -60,7 +60,7 @@ class Patrol:
         if m and self.today < datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3))):
             self.dry = True   # 本番開始日より前は試運転と同じ（投稿しない）
         self.slots = self.settings.get("運用", "") == "3枠"   # 1日3枠（7時 自動／12時 区の施策 OK後／20時 議会 OK後）
-        self.state.setdefault("slots_done", {}); self.state.setdefault("gate_stops", {})
+        self.state.setdefault("slots_done", {}); self.state.setdefault("gate_stops", {}); self.state.setdefault("unconfirmed_posts", {})
         import os
         os.environ["MATOME_GATE"] = "オフ" if self.settings.get("ゲートキーパー", "オン") == "オフ" else "オン"
         self.x = XClient(dry_run=self.dry)
@@ -492,7 +492,7 @@ class Patrol:
         if status == "未":
             self.notices.append(f"■区の施策（12時の枠）{it['title']}\n{C.to_cell(parent, replies)}\n→ 候補シート{row}行目の「確認」に OK と書くと12時の枠で投稿します")
 
-    def pick_slot(self, how, area, exclude=()):
+    def pick_slot(self, how, area, exclude=(), unconfirmed=False):
         """候補シートから、この枠で出す1行を選ぶ（なければ None）"""
         today = self.today.isoformat()
         picks = []
@@ -503,22 +503,26 @@ class Patrol:
                 continue
             if area == "議会" and typ not in ("型1", "型3"):
                 continue
+            tier = 0
             if how == "自動":
                 if v != "自動待ち":
                     continue
             elif not (v.lower() in OK_WORDS or v.upper() == "OK" or re.match(r"^OK（.*のため待機）$", v)):
-                continue
+                if not (unconfirmed and v == "未" and "件名とリンクだけ" not in r.get("備考", "")):   # 先生の確認が間に合わなかった新着（2026-11-26 先生の指示）。件名とリンクだけの簡易文面は確認なしでは出さない
+                    continue
+                tier = 1
             m = re.search(r"投稿予定日 (\d{4}-\d\d-\d\d)／期限 (\d{4}-\d\d-\d\d)", r.get("備考", ""))
             post_on, expires = (m.group(1), m.group(2)) if m else ("", "9999-12-31")
-            if how == "自動" and not m:   # 自動の枠は、日付の指定がなければ拾ってから7日以内のものだけ
+            if (how == "自動" or tier == 1) and not m:   # 自動の枠と確認なしの候補は、日付の指定がなければ拾ってから7日以内のものだけ
                 expires = min(expires, (datetime.date.fromisoformat(r.get("拾った日時", today)[:10]) + datetime.timedelta(days=7)).isoformat())
             if today > expires:
                 self.ledger.update_cell("候補", r["_row"], "確認", "期限切れ（未投稿）"); continue
             if post_on and today < post_on:
                 continue
-            picks.append((expires, -r["_row"] if how == "自動" else r["_row"], r))
-        picks.sort(key=lambda x: (x[0], x[1]))
-        for _, _, r in picks:
+            r["_unconfirmed"] = tier == 1
+            picks.append((tier, expires, -r["_row"] if how == "自動" else r["_row"], r))
+        picks.sort(key=lambda x: (x[0], x[1], x[2]))
+        for _, _, _, r in picks:
             if r["_row"] in exclude:
                 continue
             parent, replies = C.from_cell(r.get("文面案", ""))
@@ -528,18 +532,20 @@ class Patrol:
                 self.alert(f"slot_check_{r['_row']}", f"候補シート{r['_row']}行目は機械チェックで止めました（{'、'.join(problems)}）。直して再度「OK」にしてください")
                 continue
             return r, parent, replies
-        return self.pick_stock(area, exclude)
+        return self.pick_stock(area, exclude, unconfirmed)
 
     STOCK_GAP_DAYS = 90   # 同じストックを再び出すまでの日数（2026-11-13 先生決定）
 
-    def pick_stock(self, area, exclude=()):
+    def pick_stock(self, area, exclude=(), unconfirmed=False):
         """新着の候補が無いときのストック（作り置き）。情報源「ストック」・確認「ストック」（先生OK済み）の行から、
         いちばん長く出していないものを選ぶ。元ページが消えた・変わったものは出さずに先生の確認へ戻す"""
         today = self.today
         picks = []
         for r in self.ledger.rows("候補"):
-            if r.get("情報源") != "ストック" or norm(r.get("確認", "")) != "ストック":
+            v = norm(r.get("確認", ""))
+            if r.get("情報源") != "ストック" or not (v == "ストック" or (unconfirmed and v == "ストック（確認待ち）")):
                 continue
+            r["_unconfirmed"] = v != "ストック"
             typ = r.get("型", "")
             if (area == "区" and typ != "型2") or (area == "議会" and typ not in ("型1", "型3")):
                 continue
@@ -547,9 +553,9 @@ class Patrol:
             last = datetime.date.fromisoformat(m.group(1)) if m else None
             if last and (today - last).days < self.STOCK_GAP_DAYS:
                 continue
-            picks.append(((last or datetime.date.min), r["_row"], r))
-        picks.sort(key=lambda x: (x[0], x[1]))
-        for _, _, r in picks:
+            picks.append((r["_unconfirmed"], (last or datetime.date.min), r["_row"], r))
+        picks.sort(key=lambda x: (x[0], x[1], x[2]))
+        for _, _, _, r in picks:
             if r["_row"] in exclude:
                 continue
             url = r.get("URL", "")
@@ -577,6 +583,11 @@ class Patrol:
 
     GATE_TRIES = 4   # 1つの枠で点検にかける候補の数の上限
 
+    def unconfirmed_ok(self, start):
+        """先生の確認が間に合わなかった候補も出してよい枠か（設定「確認なし投稿」。既定は12時の枠だけ。2026-11-26 先生の指示）"""
+        v = self.settings.get("確認なし投稿", "12時")
+        return start != 7 and "オフ" not in v and f"{start}時" in v
+
     def gate_stop(self, r, why):
         """ゲートキーパーで止めた行を「要確認」にし、夜のまとめ通知に積む"""
         row = r["_row"]
@@ -592,6 +603,12 @@ class Patrol:
         """止めた投稿の知らせは、夜（20時以降）にまとめて1通（2026-11-22 先生の指示）"""
         if self.now.hour < 20:
             return
+        unc = [s for s in self.state["unconfirmed_posts"].get(self.today.isoformat(), []) if not s.get("sent")]
+        if unc:
+            line("【文京区まとめ】先生の確認がなかったので投稿したもの\n" + "\n".join(
+                f"・{s['slot']}時の枠 候補シート{s['row']}行目 {s['title']}\n　https://x.com/bunkyo_matome/status/{s['id']}" for s in unc))
+            for s in unc:
+                s["sent"] = True
         todo = [s for s in self.state["gate_stops"].get(self.today.isoformat(), []) if not s.get("sent")]
         if not todo:
             return
@@ -613,7 +630,7 @@ class Patrol:
                 self.say(f"{start}時の枠：投稿しない（{why}）"); return
             got, tried = None, set()
             for _ in range(self.GATE_TRIES):   # ゲートキーパーで止めたら、同じ枠の次の候補（なければ次のストック）に差し替える
-                got = self.pick_slot(how, area, tried)
+                got = self.pick_slot(how, area, tried, self.unconfirmed_ok(start))
                 if not got:
                     break
                 r, parent, replies = got
@@ -631,14 +648,20 @@ class Patrol:
             if pid.startswith("未投稿"):
                 self.say(f"{start}時の枠：{pid}"); return
             done.append(start)
+            unc = r.get("_unconfirmed")
+            if unc:
+                self.state["unconfirmed_posts"].setdefault(self.today.isoformat(), []).append(
+                    {"row": r["_row"], "title": r.get("件名", ""), "slot": start, "id": pid, "sent": False})
             if r.get("情報源") == "ストック":   # ストックは「ストック」のまま残し、最終投稿日を備考に書く
                 note = re.sub(r"／?最終投稿 \S+ \S+", "", r.get("備考", ""))
                 if r.get("_sig"):
                     note += f"／内容 {r['_sig']}"
+                if unc:
+                    note += "／先生の確認なしで投稿"
                 self.ledger.update_cell("候補", r["_row"], "備考", (note + f"／最終投稿 {self.today.isoformat()} {pid}").lstrip("／"))
             else:
-                self.ledger.update_cell("候補", r["_row"], "確認", f"投稿済 {fmt_dt(self.now)} {pid}")
-            self.say(f"{start}時の枠で投稿: 候補シート{r['_row']}行目 {r.get('件名', '')}")
+                self.ledger.update_cell("候補", r["_row"], "確認", f"投稿済{'（先生の確認なし）' if unc else ''} {fmt_dt(self.now)} {pid}")
+            self.say(f"{start}時の枠で投稿{'（先生の確認なし）' if unc else ''}: 候補シート{r['_row']}行目 {r.get('件名', '')}")
             return
 
     def post_digest(self):
@@ -697,7 +720,7 @@ class Patrol:
     def prune(self):
         """古い記録を整理（state.json を太らせない）"""
         old = (self.today - datetime.timedelta(days=60)).isoformat()
-        for k in ("posted", "digest_pool", "slots_done", "gate_stops"):
+        for k in ("posted", "digest_pool", "slots_done", "gate_stops", "unconfirmed_posts"):
             self.state[k] = {d: v for d, v in self.state[k].items() if d >= old}
         self.state["alerts"] = {k: v for k, v in self.state["alerts"].items() if k.rsplit(":", 1)[-1] >= old}
         self.state["candidates"] = {k: v for k, v in self.state["candidates"].items() if v.get("expires", "9999") >= old}
