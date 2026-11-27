@@ -176,9 +176,9 @@
   },
   "https://www.city.bunkyo.lg.jp/b021/p006063.html": {
    "first": "2026-10-22",
-   "last": "2026-10-22",
+   "last": "2026-11-12",
    "title": "国保年金課からお送りした督促状の封筒デザインにつきまして",
-   "count": 1
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b014/p007628.html": {
    "first": "2026-10-20",
@@ -831,6 +831,11 @@
     "title": "暮らしの保健室@東大GNRCオープンラボ",
     "creator": "福祉部高齢福祉課",
     "url": "https://www.city.bunkyo.lg.jp/b017/p007669.html"
+   },
+   {
+    "title": "国保年金課からお送りした督促状の封筒デザインにつきまして",
+    "creator": "福祉部国保年金課",
+    "url": "https://www.city.bunkyo.lg.jp/b021/p006063.html"
    }
   ]
  },
@@ -847,9 +852,9 @@
   "stock_changed_69:2026-11-21": "2026-11-21 12:06",
   "stock_changed_85:2026-11-25": "2026-11-25 20:06"
  },
- "last_post_at": "2026-11-27 07:05",
- "last_run": "2026-11-27 07:58",
- "last_new_item_at": "2026-11-27 07:05",
+ "last_post_at": "2026-11-27 12:06",
+ "last_run": "2026-11-27 12:06",
+ "last_new_item_at": "2026-11-27 12:06",
  "slots_done": {
   "2026-11-12": [],
   "2026-11-13": [],
@@ -915,7 +920,8 @@
    20
   ],
   "2026-11-27": [
-   7
+   7,
+   12
   ]
  },
  "claude_key_bad": false,
