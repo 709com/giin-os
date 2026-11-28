@@ -74,7 +74,8 @@ function inScope(segs, level) {
   if (/^03\s*その他会議/.test(a)) {
     if (segs.length === 1) return true;
     if (/開催終了分/.test(b) || /^old$/i.test(b) || /^議員研修会$|^議連名簿$/.test(b)) return false;
-    if (/懇談会/.test(b) && segs.length >= 3 && /年度/.test(c) && !yrs.has(reiwaNum(c))) return false;
+    // 年度のフォルダは「要点記録(H29～) / 令和6年度_要点記録」のように深い所にもあるので、3階層目より下をすべて見る
+    if (/懇談会/.test(b) && segs.slice(2).some((s) => /年度/.test(s) && !yrs.has(reiwaNum(s)))) return false;
     return true;
   }
   if (/^04\s*幹事長会/.test(a)) return segs.length === 1 || (/年度/.test(b) && yrs.has(reiwaNum(b)));
@@ -442,6 +443,13 @@ function formatAlertMessage(keys, files, dl) {
   return out.join('\n').trim();
 }
 
+// 新着はないが、やり直しても保存できずにあきらめた資料がある日の知らせ
+function formatGaveUpMessage(gaveUp, started) {
+  const md = started.toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric' });
+  return [`【SideBooks】${md}　新着はありません`, '', '5回試しても保存できなかった資料があります。SideBooksで直接ご覧ください。',
+    ...gaveUp.map((x) => `・${x.split('：')[0]}`)].join('\n');
+}
+
 // ---------- LINE ----------
 async function sendLine(text) {
   const token = process.env.LINE_CHANNEL_TOKEN;
@@ -695,8 +703,13 @@ async function main() {
       dlSummary = { ok, ng: ng.length, gaveUp, day };
     }
 
-    // 新着も更新もなく、やり直しの保存だけだった日は、LINEは送らない（記録だけ）
-    if (!added.length && !changed.length) { warnings.forEach((w) => log('注意：' + w)); return; }
+    // 新着も更新もなく、やり直しの保存だけだった日は、LINEは送らない（記録だけ）。
+    // ただし、5回試してもあきらめた資料があれば、それだけ短く知らせる（2026-11-28 先生の指示）
+    if (!added.length && !changed.length) {
+      if (!NO_LINE && dlSummary && dlSummary.gaveUp.length) await sendLine(formatGaveUpMessage(dlSummary.gaveUp, started));
+      warnings.forEach((w) => log('注意：' + w));
+      return;
+    }
 
     if (!NO_LINE) {
       const watched = added.filter((k) => isWatchedPath(files[k].folder));
