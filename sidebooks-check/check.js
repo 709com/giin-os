@@ -8,6 +8,7 @@
 //   node check.js --no-download   ダウンロードしない
 //   node check.js --no-line       LINEに送らない
 //   node check.js --full          曜日にかかわらず棚全体を見る（ふだんは毎朝・日曜・第1日曜で見る範囲を変える）
+//   node check.js --watch         幹事長会・議会運営委員会だけを軽く確認（平日8〜18時に1時間ごと。2026-11-25 先生の指示）
 
 const fs = require('fs');
 const path = require('path');
@@ -28,6 +29,12 @@ const DEBUG = args.has('--debug');
 const NO_DOWNLOAD = args.has('--no-download') || TEST;
 const NO_LINE = args.has('--no-line') || TEST;
 const FULL_ARG = args.has('--full');
+const WATCH = args.has('--watch');
+
+// ---------- 目立たせる会議（2026-11-25 先生の指示：当日に資料が上がり、意見書を作ることがある） ----------
+const WATCH_RE = /幹事長会|議会運営委員会/;
+const isWatchedPath = (p) => WATCH_RE.test(p || '');
+const LOCK = path.join(HERE, '.running');
 
 // ---------- 見る範囲（先生の指定 2026-11-11。先方の負担を減らすため） ----------
 //   毎朝  ：「令和○年○月定例議会」（最重要）、「03 その他会議」（※開催終了分・old・議員研修会・議連名簿を除く）、「04 幹事長会 / 今年度」
@@ -370,7 +377,7 @@ async function downloadOne(page, item, dir) {
 // ---------- LINEの文面（2026-11-20 先生「見にくい」→ フォルダごとにまとめる） ----------
 // 長い住所を1行ずつ並べず、いちばん上のフォルダ→その中の場所→資料名の順にまとめる。
 // 同じ場所に5件以上あるときは3件だけ書いて「ほか○件」。詳しい一覧は log.txt に残る。
-const TOP_ORDER = [/定例議会|臨時会/, /^03/, /^04/, /^02/, /^01/, /^06/, /^07/, /^05/, /^08/, /^10/, /^11/, /^12/, /^09/];
+const TOP_ORDER = [/^04|幹事長会/, /定例議会|臨時会/, /^03/, /^02/, /^01/, /^06/, /^07/, /^05/, /^08/, /^10/, /^11/, /^12/, /^09/];
 const topRank = (t) => { const i = TOP_ORDER.findIndex((re) => re.test(t)); return i < 0 ? 99 : i; };
 const shortTop = (t) => t.replace(/^\d+[\s_]*/, '');
 
@@ -410,6 +417,31 @@ function formatLineMessage({ added, changed, missed, files, dl, started }) {
   return out.join('\n');
 }
 
+// 幹事長会・議会運営委員会の新着は、ふだんのまとめとは別の1通で目立たせる
+function formatAlertMessage(keys, files, dl) {
+  const groups = {};
+  for (const k of keys) {
+    const f = files[k];
+    const segs = (f.folder || '').split(' / ').filter(Boolean);
+    const i = segs.findIndex((x) => WATCH_RE.test(x));
+    const meeting = i >= 0 ? (segs[i].match(WATCH_RE) || [''])[0] : '会議';
+    const where = segs.slice(i + 1).join('／') || segs.slice(-1).join('');
+    ((groups[meeting] ||= {})[where] ||= []).push(f.name);
+  }
+  const out = [];
+  for (const meeting of Object.keys(groups).sort((a, b) => (a === '幹事長会' ? -1 : b === '幹事長会' ? 1 : 0))) {
+    out.push(`🚨🚨【${meeting}】資料が上がりました🚨🚨`);
+    for (const [where, names] of Object.entries(groups[meeting])) {
+      if (where) out.push(`▶${where}`);
+      names.forEach((n) => out.push(`・${n}`));
+    }
+    out.push('');
+  }
+  if (dl) out.push(dl.ok ? `💾 マイドライブ「SideBooks新着」の ${dl.day} に保存済み` : '💾 保存できませんでした。SideBooksで直接見てください');
+  out.push('意見書を作るなら、Claudeに「幹事長会の資料から意見書の骨子を」と一言。');
+  return out.join('\n').trim();
+}
+
 // ---------- LINE ----------
 async function sendLine(text) {
   const token = process.env.LINE_CHANNEL_TOKEN;
@@ -427,8 +459,103 @@ async function sendLine(text) {
   }
 }
 
+// ---------- 軽い確認（--watch）：幹事長会・議会運営委員会だけ ----------
+// 見るのは「新着ファイル画面」と、記録にある該当フォルダのうち日付が近いもの・年度のまとめフォルダだけ（1回で数画面）
+const folderDate = (name) => {
+  const m = String(name).match(/R\s*(\d+)\.(\d+)\.(\d+)/);
+  return m ? new Date(Date.UTC(2018 + Number(m[1]), Number(m[2]) - 1, Number(m[3]))) : null;
+};
+function watchTargets(prev) {
+  const today = jstNow();
+  const t0 = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const out = [];
+  for (const f of prev.folders || []) {
+    if (!f.seq || !f.path || !isWatchedPath(f.path)) continue;
+    const segs = f.path.split(' / ');
+    const d = folderDate(segs[segs.length - 1]);
+    if (d) {
+      const diff = (d.getTime() - t0) / 86400000;
+      if (diff >= -3 && diff <= 14) out.push(f); // 会議の日が3日前〜2週間後のフォルダ
+    } else if (inScope(segs, 'daily') && (segs.length === 1 || segs.some((x) => activeReiwaYears().has(reiwaNum(x))))) {
+      out.push(f); // 「令和8年度」など、新しい日付フォルダができる親フォルダ
+    }
+  }
+  return out.sort((a, b) => a.path.split(' / ').length - b.path.split(' / ').length).slice(0, 15);
+}
+
+async function watchRun(page, prev, started) {
+  const known = new Set(Object.values(prev.files).map((v) => v.seq).filter(Boolean));
+  const knownFolders = new Set((prev.folders || []).map((f) => f.path));
+  const found = {};
+  const newFolders = [];
+  const queue = watchTargets(prev).map((f) => ({ seq: f.seq, path: f.path }));
+  log(`軽い確認：フォルダ ${queue.length}か所＋新着ファイル画面`);
+  const seen = new Set();
+  while (queue.length && seen.size < 25) {
+    const q = queue.shift();
+    if (seen.has(q.seq)) continue;
+    seen.add(q.seq);
+    const r = await openFolder(page, q.seq);
+    for (const f of r.files) {
+      if (f.seq && known.has(f.seq)) continue;
+      const k = `${q.path} / ${f.name}`;
+      if (!prev.files[k]) found[k] = { folder: q.path, folseq: q.seq, name: f.name, seq: f.seq, updated: f.updated, pages: f.pages, via: 'watch' };
+    }
+    for (const f of r.folders) {
+      const p = `${q.path} / ${f.name}`;
+      if (knownFolders.has(p) || !f.seq) continue;
+      newFolders.push({ seq: f.seq, path: p, folders: 0, files: 0 });
+      queue.push({ seq: f.seq, path: p }); // 新しくできた日付フォルダは中まで見る
+    }
+  }
+  try {
+    const nw = await readNewPage(page, known);
+    for (const x of nw.items) {
+      if (!x.seq || known.has(x.seq) || !isWatchedPath(x.folder)) continue;
+      if (Object.values(found).some((v) => v.seq === x.seq)) continue;
+      found[`${x.folder} / ${x.name}`] = { folder: x.folder, folseq: 'new', name: x.name, seq: x.seq, updated: x.updated, pages: x.pages, via: 'new' };
+    }
+  } catch (e) { log('注意：新着ファイル画面を読めませんでした'); }
+
+  const keys = Object.keys(found).sort();
+  if (!keys.length) { console.log('幹事長会・議会運営委員会の新着なし'); return; }
+  keys.forEach((k) => console.log('【目立たせる新着】' + k));
+
+  let dl = null;
+  if (!NO_DOWNLOAD) {
+    const day = started.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
+    const dir = path.join(saveRoot(), day);
+    let ok = 0;
+    for (const k of keys) { const r = await downloadOne(page, found[k], dir); if (r.ok) ok++; await sleep(WAIT_MS); }
+    dl = { ok, day };
+    console.log(`保存：${ok}件（${dir}）`);
+  }
+  // 見つけたものだけ記録に足す（ほかの新着は、翌朝のふだんの確認で知らせる）
+  const merged = { ...prev, files: { ...prev.files, ...found }, folders: [...(prev.folders || []), ...newFolders], watch_at: started.toISOString() };
+  fs.writeFileSync(SNAPSHOT, JSON.stringify(merged, null, 1));
+  if (!NO_LINE) await sendLine(formatAlertMessage(keys, found, dl));
+}
+
+// 朝の確認と1時間ごとの確認が重ならないようにする
+function takeLock(waitForIt) {
+  const fresh = () => { try { return Date.now() - fs.statSync(LOCK).mtimeMs < 3 * 3600 * 1000; } catch (e) { return false; } };
+  return (async () => {
+    for (let i = 0; fresh(); i++) {
+      if (!waitForIt || i >= 40) return false;
+      await sleep(30000);
+    }
+    fs.writeFileSync(LOCK, String(process.pid));
+    return true;
+  })();
+}
+const releaseLock = () => { try { fs.unlinkSync(LOCK); } catch (e) {} };
+
 // ---------- 本体 ----------
 async function main() {
+  if (!TEST) {
+    if (!(await takeLock(!WATCH))) { console.log('ほかの確認が動いているので、今回は見送りました'); return; }
+    process.on('exit', releaseLock);
+  }
   const cred = await credentials();
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ acceptDownloads: true, locale: 'ja-JP' });
@@ -450,6 +577,11 @@ async function main() {
 
     const started = new Date();
     const prev = fs.existsSync(SNAPSHOT) ? JSON.parse(fs.readFileSync(SNAPSHOT, 'utf8')) : null;
+    if (WATCH) {
+      if (!prev) { console.log('まだ最初の記録がないので、軽い確認はしません（先に manual.bat を実行）'); return; }
+      await watchRun(page, prev, started);
+      return;
+    }
     // 初回・第1日曜・--full は棚全体、ほかの日曜は週1の範囲まで、平日・土曜は毎朝の範囲だけ
     const level = prev ? todaysLevel() : 'full';
     const light = level !== 'full';
@@ -567,6 +699,8 @@ async function main() {
     if (!added.length && !changed.length) { warnings.forEach((w) => log('注意：' + w)); return; }
 
     if (!NO_LINE) {
+      const watched = added.filter((k) => isWatchedPath(files[k].folder));
+      if (watched.length) await sendLine(formatAlertMessage(watched, files, dlSummary));
       await sendLine(formatLineMessage({ added, changed, missed, files, dl: dlSummary, started }));
     }
     warnings.forEach((w) => log('注意：' + w));
@@ -582,7 +716,7 @@ main().catch(async (e) => {
     if (secret) msg = msg.split(secret).join('＊＊＊');
   }
   console.error('エラー：' + msg);
-  if (!NO_LINE) {
+  if (!NO_LINE && !WATCH) { // 1時間ごとの軽い確認の失敗は log.txt だけ（毎時LINEが来ないように）
     try { await sendLine('【SideBooks 新着チェック】今日は動きませんでした。\n理由：' + msg + '\nPCの sidebooks-check\\log.txt に詳しい記録があります。'); } catch (e2) {}
   }
   process.exit(1);
