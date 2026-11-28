@@ -279,9 +279,9 @@
   },
   "https://www.city.bunkyo.lg.jp/b032/p004647.html": {
    "first": "2026-09-24",
-   "last": "2026-09-24",
-   "title": "住まいの相続・終活セミナー&個別無料相談会",
-   "count": 1
+   "last": "",
+   "title": "住まいの相続・終活セミナー&個別無料相談会（終了しました。）",
+   "count": 2
   },
   "https://www.city.bunkyo.lg.jp/b017/p007656.html": {
    "first": "2026-09-15",
@@ -1094,6 +1094,11 @@
     "title": "不燃化推進事業",
     "creator": "",
     "url": "https://www.city.bunkyo.lg.jp/b031/p004542/index.html"
+   },
+   {
+    "title": "住まいの相続・終活セミナー&個別無料相談会（終了しました。）",
+    "creator": "",
+    "url": "https://www.city.bunkyo.lg.jp/b032/p004647.html"
    }
   ]
  },
@@ -1110,9 +1115,9 @@
   "stock_changed_69:2026-11-21": "2026-11-21 12:06",
   "stock_changed_85:2026-11-25": "2026-11-25 20:06"
  },
- "last_post_at": "2026-11-28 12:05",
- "last_run": "2026-11-28 13:28",
- "last_new_item_at": "2026-11-28 07:06",
+ "last_post_at": "2026-11-28 20:06",
+ "last_run": "2026-11-28 20:06",
+ "last_new_item_at": "2026-11-28 20:06",
  "slots_done": {
   "2026-11-12": [],
   "2026-11-13": [],
@@ -1184,7 +1189,8 @@
   ],
   "2026-11-28": [
    7,
-   12
+   12,
+   20
   ]
  },
  "claude_key_bad": false,
